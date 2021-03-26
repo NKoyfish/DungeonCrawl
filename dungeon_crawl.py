@@ -8,6 +8,11 @@ class Cell:
         self.obsID = obsID
         self.traveled = False
         self.playerthere = False
+    def getRow(self):
+        return self.row
+    def getCol(self):
+        return self.col
+
     def __repr__(self):
         if not self.playerthere:
             return (self.obsID)
@@ -32,47 +37,51 @@ class Maze:
             if r > 0:
                 print()
             for c in range(self.maxCol+1):
-                name = "c" + str(r) + str(c)
+                name = "c" + str(r) + ","+ str(c)
                 if name in self.mazeDict.keys():
                     if self.mazeDict[name].playerthere:
                         print("P",end ="")
                     else:
                         print(self.mazeDict[name],end="")
     def move(self):
-        resp = input("\nMove where? up,down,left, or right\n")
-        if resp == "up":
+        resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n")
+        if resp in ["u","up"]:
             up = self.current
-            newUp = "c" + str(int(up[1]) - 1) + up[2]
+            newUp = "c"+str(int((up.split(",")[0])[1:])-1)+ ","+up.split(",")[1]
             if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
                 self.mazeDict[up].playerthere = False
                 self.current = newUp
                 self.mazeDict[newUp].playerthere = True
             else: print("invalid move")
-        elif resp == "down":
+        elif resp in ["d","down"]:
             up = self.current
-            newUp = "c" + str(int(up[1]) + 1) + up[2]
+            newUp = "c"+str(int((up.split(",")[0])[1:])+1)+ ","+up.split(",")[1]
+            print(newUp)
             if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
                 self.mazeDict[up].playerthere = False
                 self.current = newUp
                 self.mazeDict[newUp].playerthere = True
             else: print("invalid move")
-        elif resp == "left":
+        elif resp in ["l","left"]:
             up = self.current
-            newUp = "c" + up[1] + str(int(up[2]) - 1)
+            newUp = up.split(",")[0] + ","+ str(int((up.split(",")[1]))-1) 
+            print(newUp)
             if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
                 self.mazeDict[up].playerthere = False
                 self.current = newUp
                 self.mazeDict[newUp].playerthere = True
             else: print("invalid move")
-        elif resp == "right":
+        elif resp in ["right","r"]:
             up = self.current
-            newUp = "c" + up[1] + str(int(up[2]) + 1)
+            newUp = up.split(",")[0] + ","+ str(int((up.split(",")[1]))+1) 
+            print(newUp)
             if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
                 self.mazeDict[up].playerthere = False
                 self.current = newUp
                 self.mazeDict[newUp].playerthere = True
-            else: print("invalid move")
+            
         else: print("invalid direction")
+        print("new: ",self.current)
         self.printMaze()
 
     def __init__(self,mazefile,player):
@@ -84,7 +93,7 @@ class Maze:
                 col = 0
                 row +=1
                 for char in line:
-                    cell = "c" + str(row) + str(col) 
+                    cell = "c" + str(row) +","+ str(col) 
                     if char == "=":
                         newCell = Cell(col,row,"=")
                         self.mazeDict[cell] = newCell
@@ -105,12 +114,10 @@ class Maze:
                 self.maxRow = row
 
 def main(maze,hunger = 50):
-    x = 0
     player = Player("Nick",3,hunger,(0,0))
     newMaze= Maze(maze,player)
     player.location = (1,0)
     print(f"Max c: {newMaze.maxCol}, Max r: {newMaze.maxRow}")
-    #while player.location != (newMaze.end[1],newMaze.end[2]):
     newMaze.printMaze()
     while newMaze.current != newMaze.end:
         newMaze.move()
