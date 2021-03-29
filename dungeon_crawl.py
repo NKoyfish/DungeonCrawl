@@ -28,6 +28,9 @@ class Cell:
     def smile():
         print("hello") 
         print("hi")
+        response = input("what's your name?")
+        if response == " ":
+            print("didnt provide anything")
     def __init__(self,col,row,obsID):
         """
         Parameters:
