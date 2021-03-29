@@ -28,6 +28,9 @@ class Cell:
     def smile():
         print("hello") 
         print("hi")
+    
+    def smile2():
+        print(":\)")
     def __init__(self,col,row,obsID):
         """
         Parameters:
