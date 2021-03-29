@@ -27,6 +27,7 @@ class Cell:
     """
     def smile():
         print("hello") 
+        print("hi")
     def __init__(self,col,row,obsID):
         """
         Parameters:
