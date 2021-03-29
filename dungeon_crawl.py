@@ -25,6 +25,8 @@ class Cell:
         revealed: (Boolean) True if the player has traveled near the Cell
                     
     """
+    def smile():
+        print("hello") 
     def __init__(self,col,row,obsID):
         """
         Parameters:
