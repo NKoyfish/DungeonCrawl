@@ -1,8 +1,5 @@
 print("Hello") # Nick
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 print("INST-326 Final Project") #Nelson C.
 
 """
@@ -15,22 +12,39 @@ along the text based maze.
 Further explanation (describe further):
 methods (mentioning methods used): 
 """
-=======
-=======
->>>>>>> d1051c6f1fe8d34a0951bd30ee82124de46f91aa
->>>>>>> Stashed changes
+
 class Greet():
     """Greets the user."""
     def __init__(self,language):
-        self.language = language
+        self.language = language 
     
-<<<<<<< Updated upstream
+    #simple menu
+    #2 methods don't do anything right now!
+    def menuStartGame():
+        print("---------Welcome to DungeonCrawl-----------")
+        print()
+        choice = input("""
+                R: Reset Game
+                S: Start Game
+                Q: Quit Game
+
+                Please Enter your Choice: """)
+        
+        if choice == "R" or choice == "r":
+            login()
+        elif choice == "S" or choice == "s":
+            start()
+        elif choice == "Q" or choice == "q":
+            quit()
+        else:
+            print("Select either R or S")
+            print("Please try again!")
+            menuStartGame()
+
+    def login():
+        pass
+    def start():
+        pass
+
     
-=======
-<<<<<<< HEAD
-    
->>>>>>> d1051c6f1fe8d34a0951bd30ee82124de46f91aa
-=======
-    
->>>>>>> d1051c6f1fe8d34a0951bd30ee82124de46f91aa
->>>>>>> Stashed changes
+
