@@ -18,33 +18,45 @@ class Greet():
     def __init__(self,language):
         self.language = language 
     
-    #simple menu
-    #2 methods don't do anything right now!
+    #simple menu being created
     def menuStartGame():
+        # still have to work on the reset and start button
+        def reset():
+            print("we still have to come up with a reset option")
+        def start():
+            print("have to make a start button option")
+        
+
         print("---------Welcome to DungeonCrawl-----------")
         print()
-        choice = input("""
+
+        loop = True
+        while loop:   
+            choice = input("""
                 R: Reset Game
                 S: Start Game
                 Q: Quit Game
 
                 Please Enter your Choice: """)
-        
-        if choice == "R" or choice == "r":
-            login()
-        elif choice == "S" or choice == "s":
-            start()
-        elif choice == "Q" or choice == "q":
-            quit()
-        else:
-            print("Select either R or S")
-            print("Please try again!")
-            menuStartGame()
+            
+            """
+            this is only temporary, the break might not work when
+            executing the reset button or the start button.
+            for the time being its okay. 
+            """
+            if choice== "R" or choice == "r":     
+                reset()
+                break
+            elif choice== "S" or choice == "s":
+                start()
+                break
+            elif choice=="Q" or choice == "q":
+                quit()
+                loop=False 
+            else:
+                wrongChoice = input("Wrong option selection. Enter any key to try again: ") 
 
-    def login():
-        pass
-    def start():
-        pass
+    menuStartGame()
 
     
 
