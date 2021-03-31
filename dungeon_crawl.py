@@ -86,9 +86,11 @@ class Player:
         self.hunger = hunger
         self.maxhunger = hunger
         self.starve = False
+
 class Maze:
     def __init__(self,mazefile,player):
         self.mazeDict = {}
+        self.mazeStairs = {}
         self.current = "c0,0"
         row = -1
         col = 0
@@ -96,7 +98,7 @@ class Maze:
             for line in f.readlines():
                 col = 0
                 row +=1
-                for char in line:
+                for char in line.strip(): #get rid of newlines
                     cell = "c" + str(row) +","+ str(col) 
                     if char == "=":
                         newCell = Cell(col,row,"=")
@@ -110,6 +112,17 @@ class Maze:
                         newCell = Cell(col,row,"E")
                         self.mazeDict[cell] = newCell
                         self.end = cell
+                    elif char.isdigit(): #stairs
+                        newCell = Cell(col,row,char)
+                        newCell.obsID = char
+                        self.mazeDict[cell] = newCell
+                        if char not in self.mazeStairs.keys():
+                            self.mazeStairs[char] = (cell,"")
+                            #first detection of a stair number 
+                        else:
+                            pos1,pos2 = self.mazeStairs[char]
+                            pos2 = cell
+                            self.mazeStairs[char] = (pos1,cell)
                     else:
                         newCell = Cell(col,row," ")
                         self.mazeDict[cell] = newCell
@@ -117,14 +130,6 @@ class Maze:
                 self.maxCol = col -1
                 self.maxRow = row
                 self.revealSurround()
-    def wherePlayer(self):
-        """
-        returns the position of the player.
-        """
-        for key in self.mazeDict.keys():
-            if self.mazeDict[key].playerthere:
-                temp = self.mazeDict[key]
-                return "c"+ str(temp.row) +","+ str(temp.col)
     
     def printMaze(self,player):
         statsShown = False
@@ -185,6 +190,18 @@ class Maze:
                 self.mazeDict[newUp].playerthere = True 
                 moved = True
             else: print("A wall obstructs you")
+        if self.mazeDict[self.current].obsID.isdigit():#stair check
+            print("move from", self.current)
+            print(self.mazeDict[self.current].playerthere)
+            pos1,pos2 = self.mazeStairs[self.mazeDict[self.current].obsID]
+            self.mazeDict[self.current].playerthere = False
+            if self.current == pos1:
+                self.current = pos2
+            else:
+                self.current = pos1
+            print("moved to", self.current)
+            self.mazeDict[self.current].playerthere = True
+            self.mazeDict[self.current].revealed = True
         if moved:
             if player.hunger > 0:
                 player.hunger -= 1
@@ -194,7 +211,7 @@ class Maze:
                 print(f"{player.name} has died of starvation")
 
         elif resp == "p":
-            print(self.wherePlayer())
+            print(self.current)
 
         elif resp.lower() == "rest":
             if player.hunger > 10:
@@ -206,7 +223,7 @@ class Maze:
         else: print("invalid direction or action")
         #print("new: ",self.current)
         self.revealSurround()
-        self.printMaze(player)
+        
     def revealSurround(self):
         curr = self.current
         surround = ["c"+str(int((curr.split(",")[0])[1:])-1)+ ","+curr.split(",")[1], 
@@ -227,6 +244,7 @@ def main(maze,hunger = 50):
     newMaze.printMaze(player)
     while newMaze.current != newMaze.end and player.health > 0:
         newMaze.move(player)
+        newMaze.printMaze(player)
     if player.health == 0:
         print("\nGame Over!")
     else: print("\nCompleted Maze!")
