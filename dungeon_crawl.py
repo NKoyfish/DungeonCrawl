@@ -93,7 +93,10 @@ class Maze:
     def __init__(self,mazefile,player):
         self.mazeDict = {}
         self.mazeStairs = {}
+        self.tuplemaze = {}
+        self.currentTuple = "not set"
         self.current = "not set"
+        self.endTuple = "not set"
         row = -1
         col = 0
         with open(mazefile,"r") as f:
@@ -101,38 +104,37 @@ class Maze:
                 col = 0
                 row +=1
                 for char in line.strip(): #get rid of newlines
-                    cell = "c" + str(row) +","+ str(col) 
+                    strTuple = str((row,col))
                     if char == "=":
                         newCell = Cell(col,row,"=")
-                        self.mazeDict[cell] = newCell
+                        self.tuplemaze[strTuple] = newCell
                     elif char == "S":
                         newCell = Cell(col,row,"S")
                         newCell.playerthere = True
-                        self.mazeDict[cell] = newCell
-                        self.current = cell          
+                        self.tuplemaze[strTuple] = newCell
+                        self.currentTuple = (row,col)          
                     elif char == "E":
                         newCell = Cell(col,row,"E")
-                        self.mazeDict[cell] = newCell
-                        self.end = cell
+                        self.tuplemaze[strTuple] = newCell
+                        self.endTuple = strTuple
                     elif char.isdigit(): #stairs
                         newCell = Cell(col,row,char)
                         newCell.obsID = char
-                        self.mazeDict[cell] = newCell
+                        self.tuplemaze[strTuple] = newCell
                         if char not in self.mazeStairs.keys():
-                            self.mazeStairs[char] = (cell,"")
+                            self.mazeStairs[char] = ((row,col),"")
                             #first detection of a stair number 
                         else:
                             pos1,pos2 = self.mazeStairs[char]
-                            pos2 = cell
-                            self.mazeStairs[char] = (pos1,cell)
+                            pos2 = (row,col)
+                            self.mazeStairs[char] = (pos1,pos2)
                     else:
                         newCell = Cell(col,row," ")
-                        self.mazeDict[cell] = newCell
+                        self.tuplemaze[strTuple] = newCell
                     col+=1
                 self.maxCol = col -1
                 self.maxRow = row
-                if self.current != "not set":
-                    self.revealSurround()
+        self.revealSurround()
     
     def printMaze(self,player):
         statsShown = False
@@ -140,12 +142,12 @@ class Maze:
             if r >0:
                 print()
             for c in range(self.maxCol+1):
-                name = "c" + str(r) + ","+ str(c)
-                if name in self.mazeDict.keys():
-                    if self.mazeDict[name].playerthere:
+                name = "("+str(r)+", "+str(c)+")"
+                if name in self.tuplemaze.keys():
+                    if self.tuplemaze[name].playerthere:
                         print("P",end ="")
                     else:
-                        print(self.mazeDict[name],end ="")
+                        print(self.tuplemaze[name],end ="")
         if not statsShown:
             print(f"\nHealth: {player.health}/{player.maxhealth} \t \
                 Hunger: {player.hunger}/{player.maxhunger}")
@@ -154,57 +156,55 @@ class Maze:
         resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n \
         Other: (Rest), or (p)osition\n")
         moved = False
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
         if resp in ["u","up"]:
-            up = self.current
-            newUp = "c"+str(int((up.split(",")[0])[1:])-1)+ ","+up.split(",")[1]
-            if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
-                self.mazeDict[up].playerthere = False
-                self.current = newUp
-                self.mazeDict[newUp].playerthere = True
+            up = str(self.currentTuple)
+            tupNewUp = "("+str(row-1)+", "+str(col)+")"
+            if tupNewUp in self.tuplemaze.keys() and self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[up].playerthere = False
+                self.currentTuple = (row-1,col)
+                self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
             else: print("A wall obstructs you")
         elif resp in ["d","down"]:
-            up = self.current
-            newUp = "c"+str(int((up.split(",")[0])[1:])+1)+ ","+up.split(",")[1]
-            #print(newUp)
-            if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
-                self.mazeDict[up].playerthere = False
-                self.current = newUp
-                self.mazeDict[newUp].playerthere = True
+            up = str(self.currentTuple)
+            tupNewUp = "("+str(row+1)+", "+str(col)+")"
+            if tupNewUp in self.tuplemaze.keys() and self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[up].playerthere = False
+                self.currentTuple = (row+1,col)
+                self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
             else: print("A wall obstructs you")
         elif resp in ["l","left"]:
-            up = self.current
-            newUp = up.split(",")[0] + ","+ str(int((up.split(",")[1]))-1) 
-            #print(newUp)
-            if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
-                self.mazeDict[up].playerthere = False
-                self.current = newUp
-                self.mazeDict[newUp].playerthere = True
+            up = str(self.currentTuple)
+            tupNewUp = "("+str(row)+", "+str(col-1)+")"
+            if tupNewUp in self.tuplemaze.keys() and self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[up].playerthere = False
+                self.currentTuple = (row,col-1)
+                self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
             else: print("A wall obstructs you")
         elif resp in ["right","r"]:
-            up = self.current
-            newUp = up.split(",")[0] + ","+ str(int((up.split(",")[1]))+1) 
-            #print(newUp)
-            if newUp in self.mazeDict.keys() and self.mazeDict[newUp].obsID != "=":
-                self.mazeDict[up].playerthere = False
-                self.current = newUp
-                self.mazeDict[newUp].playerthere = True 
+            up = str(self.currentTuple)
+            tupNewUp = "("+str(row)+", "+str(col+1)+")"
+            if tupNewUp in self.tuplemaze.keys() and self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[up].playerthere = False
+                self.currentTuple = (row,col+1)
+                self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
             else: print("A wall obstructs you")
-        if self.mazeDict[self.current].obsID.isdigit():#stair check
-            print("move from", self.current)
-            print(self.mazeDict[self.current].playerthere)
-            pos1,pos2 = self.mazeStairs[self.mazeDict[self.current].obsID]
-            self.mazeDict[self.current].playerthere = False
-            if self.current == pos1:
-                self.current = pos2
+        if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():#stair check
+            print("move from", self.currentTuple)
+            print(self.tuplemaze[str(self.currentTuple)].playerthere)
+            pos1,pos2 = self.mazeStairs[self.tuplemaze[str(self.currentTuple)].obsID]
+            self.tuplemaze[str(self.currentTuple)].playerthere = False
+            if self.currentTuple == pos1:
+                self.currentTuple = pos2
             else:
-                self.current = pos1
-            print("moved to", self.current)
-            self.mazeDict[self.current].playerthere = True
-            self.mazeDict[self.current].revealed = True
+                self.currentTuple = pos1
+            self.tuplemaze[str(self.currentTuple)].playerthere = True
+            self.tuplemaze[str(self.currentTuple)].revealed = True
         if moved:
             if player.hunger > 0:
                 player.hunger -= 1
@@ -214,7 +214,7 @@ class Maze:
                 print(f"{player.name} has died of starvation")
 
         elif resp == "p":
-            print(self.current)
+            print(self.currentTuple)
 
         elif resp.lower() == "rest":
             if player.hunger > 10:
@@ -224,29 +224,23 @@ class Maze:
                 player.hunger -= 10
         
         else: print("invalid direction or action")
-        print("new: ",self.current)
         self.revealSurround()
         
     def revealSurround(self):
-        curr = self.current
-        surround = ["c"+str(int((curr.split(",")[0])[1:])-1)+ ","+curr.split(",")[1], 
-        "c"+str(int((curr.split(",")[0])[1:])-1) + ","+ str(int((curr.split(",")[1]))+1), 
-        "c"+str(int((curr.split(",")[0])[1:])-1) + ","+ str(int((curr.split(",")[1]))-1),
-        "c"+str(int((curr.split(",")[0])[1:])+1)+ ","+curr.split(",")[1], 
-        "c"+str(int((curr.split(",")[0])[1:])+1) + ","+ str(int((curr.split(",")[1]))+1), 
-        "c"+str(int((curr.split(",")[0])[1:])+1) + ","+ str(int((curr.split(",")[1]))-1),
-        curr.split(",")[0] + ","+ str(int((curr.split(",")[1]))-1),
-        curr.split(",")[0] + ","+ str(int((curr.split(",")[1]))+1)]
-        for closeCell in surround:
-            if closeCell in self.mazeDict.keys():
-                self.mazeDict[closeCell].revealed = True
-
+        row,col = self.currentTuple
+        dirs ={ "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+", "+str(col)+")",
+                "left":"("+str(row)+", "+str(col-1)+")", "right":"("+str(row)+", "+str(col+1)+")",
+                "upl":"("+str(row-1)+", "+str(col-1)+")","downl":"("+str(row+1)+", "+str(col-1)+")",
+                "upR":"("+str(row-1)+", "+str(col+1)+")", "downR":"("+str(row+1)+", "+str(col+1)+")"}
+        for key in dirs.keys():
+            if dirs[key] in self.tuplemaze.keys():
+                self.tuplemaze[dirs[key]].revealed = True
 def main(maze,hunger = 50):
     player = Player("Nick",10,3,hunger)
     newMaze= Maze(maze,player)
     #print(f"Max c: {newMaze.maxCol}, Max r: {newMaze.maxRow}")
     newMaze.printMaze(player)
-    while newMaze.current != newMaze.end and player.health > 0:
+    while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player)
         newMaze.printMaze(player)
     if player.health == 0:
