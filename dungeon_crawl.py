@@ -35,6 +35,7 @@ class Cell:
         """
         self.col = col
         self.row = row
+        self.pos = (row,col)
         self.obsID = obsID
         self.traveled = False
         self.playerthere = False
@@ -42,8 +43,9 @@ class Cell:
 
     def __repr__(self):
         """
-        Prints Cell.obsID
-        Side Effect: Prints Cell obsID or P if player occupies the Cell.
+        Allows Prints that reference a Cell object to print Cell.obsID
+        Returns: Prints Cell.obsID, "?" if the Cell hasn't been revealed or "P" if the
+                 player is occupying the cell. 
         """
         if not self.playerthere and self.revealed:
             return (self.obsID)
@@ -91,7 +93,7 @@ class Maze:
     def __init__(self,mazefile,player):
         self.mazeDict = {}
         self.mazeStairs = {}
-        self.current = "c0,0"
+        self.current = "not set"
         row = -1
         col = 0
         with open(mazefile,"r") as f:
@@ -129,7 +131,8 @@ class Maze:
                     col+=1
                 self.maxCol = col -1
                 self.maxRow = row
-                self.revealSurround()
+                if self.current != "not set":
+                    self.revealSurround()
     
     def printMaze(self,player):
         statsShown = False
@@ -221,7 +224,7 @@ class Maze:
                 player.hunger -= 10
         
         else: print("invalid direction or action")
-        #print("new: ",self.current)
+        print("new: ",self.current)
         self.revealSurround()
         
     def revealSurround(self):
@@ -237,6 +240,7 @@ class Maze:
         for closeCell in surround:
             if closeCell in self.mazeDict.keys():
                 self.mazeDict[closeCell].revealed = True
+
 def main(maze,hunger = 50):
     player = Player("Nick",10,3,hunger)
     newMaze= Maze(maze,player)
