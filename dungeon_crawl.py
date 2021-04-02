@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
 import sys
-
+import tempfile
+import os
+import random
 
 class Cell:
     """
@@ -53,6 +55,7 @@ class Cell:
             return "?"
         else:
             return "P"
+
 class Player:
     """
     A Player explores a Maze. While exploring the maze their hunger goes down.
@@ -89,7 +92,38 @@ class Player:
         self.maxhunger = hunger
         self.starve = False
 
-class Maze:
+class EmptyMaze():
+    def __init__(self,mazefile):
+        self.tuplemaze = {}
+        row = -1
+        col = 0
+        with open(mazefile,"r") as f:
+            for line in f.readlines():
+                col = 0
+                row +=1
+                for char in line.strip(): #get rid of newlines
+                    strTuple = str((row,col))
+                    if char == "=":
+                        newCell = Cell(col,row,"=")
+                        self.tuplemaze[strTuple] = newCell
+                    
+                    else:
+                        newCell = Cell(col,row," ")
+                        self.tuplemaze[strTuple] = newCell
+                    col+=1
+                self.maxCol = col -1
+                self.maxRow = row
+
+    def printMaze(self):
+        for r in range(self.maxRow+1):
+            if r >0:
+                print()
+            for c in range(self.maxCol+1):
+                name = "("+str(r)+", "+str(c)+")"
+                if name in self.tuplemaze.keys():
+                    self.tuplemaze[name].revealed = True
+                    print(self.tuplemaze[name],end ="")
+class Maze():
     def __init__(self,mazefile,player):
         self.mazeDict = {}
         self.mazeStairs = {}
@@ -117,6 +151,12 @@ class Maze:
                         newCell = Cell(col,row,"E")
                         self.tuplemaze[strTuple] = newCell
                         self.endTuple = strTuple
+                    elif char == "T":
+                        newCell = Cell(col,row,"T")
+                        self.tuplemaze[strTuple] = newCell
+                    elif char == "B":
+                        newCell = Cell(col,row,"B")
+                        self.tuplemaze[strTuple] = newCell
                     elif char.isdigit(): #stairs
                         newCell = Cell(col,row,char)
                         newCell.obsID = char
@@ -136,7 +176,7 @@ class Maze:
                 self.maxRow = row
         self.revealSurround()
     
-    def printMaze(self,player):
+    def printMaze(self,player,bool = False):
         statsShown = False
         for r in range(self.maxRow+1):
             if r >0:
@@ -147,11 +187,14 @@ class Maze:
                     if self.tuplemaze[name].playerthere:
                         print("P",end ="")
                     else:
-                        print(self.tuplemaze[name],end ="")
+                        if not bool:
+                            print(self.tuplemaze[name],end ="")
+                        else: print(self.tuplemaze[name].obsID,end ="")
         if not statsShown:
             print(f"\nHealth: {player.health}/{player.maxhealth} \t \
                 Hunger: {player.hunger}/{player.maxhunger}")
             statsShown = True
+    
     def move(self,player):
         resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n \
         Other: (Rest), or (p)osition\n")
@@ -225,7 +268,7 @@ class Maze:
         
         else: print("invalid direction or action")
         self.revealSurround()
-        
+    
     def revealSurround(self):
         row,col = self.currentTuple
         dirs ={ "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+", "+str(col)+")",
@@ -235,7 +278,62 @@ class Maze:
         for key in dirs.keys():
             if dirs[key] in self.tuplemaze.keys():
                 self.tuplemaze[dirs[key]].revealed = True
+
+def generateSimpleMaze():
+        with open("temp.txt", "w+") as f: 
+            wall = "="
+            space = " "  
+            rowsize = int(input("How many rows? (Enter value > 3)\n"))
+            colsize = int(input("How many columns? (Enter value > 3)\n"))
+            #rooms = int(input("How many rooms?\n"))
+            for x in range(rowsize):
+                if x == 0 or x== rowsize-1:
+                    wallstr = wall*colsize+"\n"
+                    #print(wallstr,end="")
+                    f.write(wallstr)
+                else:
+                    wallstr = "="+ space*(colsize-2)+"=\n"
+                    f.write(wallstr)
+                    #print(wallstr,end="")
+        newMaze = EmptyMaze("temp.txt")
+        startloc = "."
+        endloc = "."
+        occupied = ["."]
+        while startloc == endloc:
+            startloc = "("+ str(random.randint(1,newMaze.maxRow-1))+", "+ str(random.randint(1,newMaze.maxCol-1))+")"
+            endloc = "("+ str(random.randint(1,newMaze.maxRow-1))+", "+ str(random.randint(1,newMaze.maxCol-1))+")"
+        newMaze.tuplemaze[startloc].obsID="S"
+        newMaze.tuplemaze[endloc].obsID="E"
+        occupied.append(startloc)
+        occupied.append(endloc)
+        area = (newMaze.maxCol - 2) * (newMaze.maxRow-2)
+        battleloc = "."
+        treasureloc = "."
+        
+        for count in range(int(area/20)+1):
+            while battleloc in occupied and treasureloc in occupied:
+                battleloc = "("+ str(random.randint(1,newMaze.maxRow-1))+", "+ str(random.randint(1,newMaze.maxCol-1))+")"
+                treasureloc = "("+ str(random.randint(1,newMaze.maxRow-1))+", "+ str(random.randint(1,newMaze.maxCol-1))+")"
+            if battleloc not in occupied:
+                newMaze.tuplemaze[battleloc].obsID ="B"
+                occupied.append(battleloc)
+            if treasureloc not in occupied:
+                newMaze.tuplemaze[treasureloc].obsID ="T"
+                occupied.append(treasureloc)
+        with open("generated.txt","w") as g:
+            for cell in newMaze.tuplemaze.keys():
+                if newMaze.tuplemaze[cell].col == newMaze.maxCol:
+                    g.write("=")
+                    g.write("\n")
+                else:
+                    g.write(newMaze.tuplemaze[cell].obsID)
+        
+        os.remove("temp.txt")
+        return g.name
+
 def main(maze,hunger = 50):
+    if maze is None:
+        maze = generateSimpleMaze()
     player = Player("Nick",10,3,hunger)
     newMaze= Maze(maze,player)
     #print(f"Max c: {newMaze.maxCol}, Max r: {newMaze.maxRow}")
@@ -245,7 +343,9 @@ def main(maze,hunger = 50):
         newMaze.printMaze(player)
     if player.health == 0:
         print("\nGame Over!")
+        newMaze.printMaze(player,True)
     else: print("\nCompleted Maze!")
+
 def parse_args(arglist):
     """ Parse command-line arguments.
     
@@ -263,9 +363,10 @@ def parse_args(arglist):
         namespace: the parsed arguments, as a namespace.
     """
     parser = ArgumentParser()
-    parser.add_argument("filename",
+    parser.add_argument("-filename",
                         help="path to maze layout")
     return parser.parse_args(arglist)
+
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
     main(args.filename)    
