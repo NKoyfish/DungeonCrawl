@@ -92,6 +92,18 @@ class Player:
         self.hunger = hunger
         self.maxhunger = hunger
         self.starve = False
+    
+    #might need to alter later but this is where i'm thinking about
+    #putting the battle method. 
+    """
+      Brief Description: this battle method will be created, the player 
+      will be faced with a creature or a person to fight and 
+      the user will choose if he wants to run away from the battle, fight 
+      the battle or rest, allow the player to recuperate, eat something
+      and some back to battle.
+
+      this for now is a brainstorming idea!
+    """
 
 class EmptyMaze():
     """
