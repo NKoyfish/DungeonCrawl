@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 import sys
 import tempfile
 import os
+import math
 import random
 
 class Cell:
@@ -93,7 +94,27 @@ class Player:
         self.starve = False
 
 class EmptyMaze():
+    """
+    An EmptyMaze is created when generateSimpleMaze() is called.
+    EmptyMaze starts off as an n by m sized rectangle designated by the user
+    and procedurally generates start, end, treasure, and battle obstacles.
+
+    Attributes:
+        maxCol: (int) max number of columns in maze where index starts at 0.
+        maxRow: (int) max number of rows in maze where index starts at 0.
+        tuplemaze: (Dictionary of string casted tuples) keys pair with Cell objects
+    """
     def __init__(self,mazefile):
+        """
+        Creates a new EmptyMaze object
+
+        Parameters:
+            mazefile: (str) name of new file to be made
+        
+        Side Effects:
+            sets self.maxCol
+            sets self.maxRow
+        """
         self.tuplemaze = {}
         row = -1
         col = 0
@@ -115,6 +136,10 @@ class EmptyMaze():
                 self.maxRow = row
 
     def printMaze(self):
+        """
+        prints the EmptyMaze
+        only really used for debugging dungeon generation
+        """
         for r in range(self.maxRow+1):
             if r >0:
                 print()
@@ -128,6 +153,7 @@ class Maze():
         self.mazeDict = {}
         self.mazeStairs = {}
         self.tuplemaze = {}
+        self.modulePts = [] #attachment pts for generateSimpleMaze()
         self.currentTuple = "not set"
         self.current = "not set"
         self.endTuple = "not set"
@@ -137,47 +163,52 @@ class Maze():
             for line in f.readlines():
                 col = 0
                 row +=1
-                for char in line.strip(): #get rid of newlines
-                    strTuple = str((row,col))
-                    if char == "=":
-                        newCell = Cell(col,row,"=")
-                        self.tuplemaze[strTuple] = newCell
-                    elif char == "S":
-                        newCell = Cell(col,row,"S")
-                        newCell.playerthere = True
-                        self.tuplemaze[strTuple] = newCell
-                        self.currentTuple = (row,col)          
-                    elif char == "E":
-                        newCell = Cell(col,row,"E")
-                        self.tuplemaze[strTuple] = newCell
-                        self.endTuple = strTuple
-                    elif char == "T":
-                        newCell = Cell(col,row,"T")
-                        self.tuplemaze[strTuple] = newCell
-                    elif char == "B":
-                        newCell = Cell(col,row,"B")
-                        self.tuplemaze[strTuple] = newCell
-                    elif char.isdigit(): #stairs
-                        newCell = Cell(col,row,char)
-                        newCell.obsID = char
-                        self.tuplemaze[strTuple] = newCell
-                        if char not in self.mazeStairs.keys():
-                            self.mazeStairs[char] = ((row,col),"")
-                            #first detection of a stair number 
+                for char in line: #get rid of newlines
+                    if char != "\n":
+                        strTuple = str((row,col))
+                        if char == "=":
+                            newCell = Cell(col,row,"=")
+                            self.tuplemaze[strTuple] = newCell
+                        elif char == "S":
+                            newCell = Cell(col,row,"S")
+                            newCell.playerthere = True
+                            self.tuplemaze[strTuple] = newCell
+                            self.currentTuple = (row,col)          
+                        elif char == "E":
+                            newCell = Cell(col,row,"E")
+                            self.tuplemaze[strTuple] = newCell
+                            self.endTuple = strTuple
+                        elif char == "T":
+                            newCell = Cell(col,row,"T")
+                            self.tuplemaze[strTuple] = newCell
+                        elif char == "B":
+                            newCell = Cell(col,row,"B")
+                            self.tuplemaze[strTuple] = newCell
+                        elif char.isdigit(): #stairs
+                            newCell = Cell(col,row,char)
+                            newCell.obsID = char
+                            self.tuplemaze[strTuple] = newCell
+                            if char not in self.mazeStairs.keys():
+                                self.mazeStairs[char] = ((row,col),"")
+                                #first detection of a stair number 
+                            else:
+                                pos1,pos2 = self.mazeStairs[char]
+                                pos2 = (row,col)
+                                self.mazeStairs[char] = (pos1,pos2)
                         else:
-                            pos1,pos2 = self.mazeStairs[char]
-                            pos2 = (row,col)
-                            self.mazeStairs[char] = (pos1,pos2)
-                    else:
-                        newCell = Cell(col,row," ")
-                        self.tuplemaze[strTuple] = newCell
-                    col+=1
+                            newCell = Cell(col,row," ")
+                            self.tuplemaze[strTuple] = newCell
+                        col+=1
+                    else: 
+                        self.modulePts.append((row,col-1))
                 self.maxCol = col -1
                 self.maxRow = row
+                self.modulePts = [self.modulePts[0],self.modulePts[len(self.modulePts)-1]]
         self.revealSurround()
     
     def printMaze(self,player,bool = False):
         statsShown = False
+        print(self.modulePts)
         for r in range(self.maxRow+1):
             if r >0:
                 print()
@@ -194,7 +225,34 @@ class Maze():
             print(f"\nHealth: {player.health}/{player.maxhealth} \t \
                 Hunger: {player.hunger}/{player.maxhunger}")
             statsShown = True
-    
+
+    def writeMaze(self,file):
+        """
+        Converts a Maze object back into a textfile. Used to append new rooms
+
+        Parameters:
+                file: (str) name to the file to be created temporarily
+
+        Side Effects:
+                creates a new txt file in the current directory named file
+        """
+        with open(file,"w") as f:
+            maxrowcount = 0
+            r = 0
+            print("max",self.maxRow)
+            while maxrowcount < self.maxRow+1:
+                for c in range(self.maxCol+1):
+                    strTup = "("+str(maxrowcount)+", "+str(c)+")"
+                    strTupplus = "("+str(maxrowcount)+", "+str(c+1)+")"
+                    if strTupplus in self.tuplemaze.keys():
+                        f.write(self.tuplemaze[strTup].obsID)
+                    else:
+                        f.write(self.tuplemaze[strTup].obsID)
+                        if c != self.maxCol+1:
+                            f.write("\n")
+                maxrowcount +=1
+            
+
     def move(self,player):
         resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n \
         Other: (Rest), or (p)osition\n")
@@ -279,13 +337,25 @@ class Maze():
             if dirs[key] in self.tuplemaze.keys():
                 self.tuplemaze[dirs[key]].revealed = True
 
-def generateSimpleMaze():
+    def appendRoom(self,maze2,open = True):
+        print("d")
+        
+def generateSimpleMaze(newRoom = False):
         with open("temp.txt", "w+") as f: 
             wall = "="
             space = " "  
+            roomConditionMet = False
             rowsize = int(input("How many rows? (Enter value > 3)\n"))
             colsize = int(input("How many columns? (Enter value > 3)\n"))
-            #rooms = int(input("How many rooms?\n"))
+            rooms = 0
+            mazeArea = (rowsize-2)*(colsize-2)
+            if colsize > 5 and rowsize > 5:
+                while not roomConditionMet:
+                    rooms = int(input("How many rooms?")) 
+                    if math.floor(mazeArea/9) < rooms:
+                        print("Impossible to do, enter a smaller number")
+                    else: roomConditionMet = True
+
             for x in range(rowsize):
                 if x == 0 or x== rowsize-1:
                     wallstr = wall*colsize+"\n"
@@ -299,13 +369,57 @@ def generateSimpleMaze():
         startloc = "."
         endloc = "."
         occupied = ["."]
+        illegalrow = [0]
+        illegalcol = [0]
+        anchorrow = 0
+        anchorcol = 0
         while startloc == endloc:
-            startloc = "("+ str(random.randint(1,newMaze.maxRow-1))+", "+ str(random.randint(1,newMaze.maxCol-1))+")"
-            endloc = "("+ str(random.randint(1,newMaze.maxRow-1))+", "+ str(random.randint(1,newMaze.maxCol-1))+")"
-        newMaze.tuplemaze[startloc].obsID="S"
-        newMaze.tuplemaze[endloc].obsID="E"
-        occupied.append(startloc)
-        occupied.append(endloc)
+            srow,scol = (random.randint(1,newMaze.maxRow-1),random.randint(1,newMaze.maxCol-1))
+            erow,ecol = (random.randint(1,newMaze.maxRow-1),random.randint(1,newMaze.maxCol-1))
+            if (str(srow),str(scol)) != (str(erow),str(ecol)):
+                startloc = "("+ str(srow)+", "+ str(scol)+")"
+                endloc = "("+ str(erow)+", "+ str(ecol)+")"
+                newMaze.tuplemaze[startloc].obsID="S"
+                newMaze.tuplemaze[endloc].obsID="E"
+                occupied.append(startloc)
+                occupied.append(endloc)
+                illegalcol.append(ecol)
+                illegalcol.append(scol)
+                illegalrow.append(erow)
+                illegalrow.append(srow)
+        ancR = False
+        ancC = False
+        while anchorrow in illegalrow and anchorcol in illegalcol:
+            if not ancR:
+                anchorrow = random.randint(2,newMaze.maxRow-2)  
+            if not ancC:
+                anchorcol = random.randint(2,newMaze.maxCol-2)
+            if anchorrow not in illegalrow:
+                ancR = True
+            if anchorcol not in illegalcol:
+                ancC = True
+        print((anchorrow,anchorcol))
+        r = 0
+        c = 0
+        if random.choice(["vert","horiz"]) == "vert":
+            while r < newMaze.maxRow+1:
+                roll = random.uniform(0, 1)
+                if roll < .8:
+                    strTup = "(" + str(r) +", " + str(anchorcol) + ")"
+                    if strTup in newMaze.tuplemaze.keys():
+                        newMaze.tuplemaze[strTup].obsID = "="
+                r+=1
+        else:
+            while c < newMaze.maxCol+1:
+                roll = random.uniform(0, 1)
+                if roll < .8:
+                    strTup = "(" + str(anchorrow) +", " + str(c) + ")"
+                    if strTup in newMaze.tuplemaze.keys() and \
+                        newMaze.tuplemaze[strTup].obsID not in ["S","E"]:
+                        newMaze.tuplemaze[strTup].obsID = "="
+                c+=1
+
+        
         area = (newMaze.maxCol - 2) * (newMaze.maxRow-2)
         battleloc = "."
         treasureloc = "."
