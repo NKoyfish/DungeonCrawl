@@ -104,6 +104,11 @@ class Player:
 
       this for now is a brainstorming idea!
     """
+    #Temporarily we are using the pass functionality to 
+    #act as a place holder for our battle_enemy method since we dont
+    #have a proper method yet.
+    def battle_enemy():
+        pass
 
 class EmptyMaze():
     """
