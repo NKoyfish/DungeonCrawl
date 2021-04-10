@@ -110,17 +110,31 @@ class Player:
     def buildEnemy(self):
         monsters = ["Aaragorn", "Legolas", "Gimli", "Gandalf", "Golum", "Dufus", "Rico", "Joker"]
         self.monsters_name = monsters[randint(0,7)]
-        self.monstersType = randint(1,2)
+        self.monsters_type = randint(1,2)
         self.monsters_health = 100
+
         if self.monsters_type == 1:
             self.monsters_strength = randint(70,90)
             self.monsters_speed = randint(50,70)
-        elif self.enemy_type == 2:
-            self.enemy_strength = randint(50,70)
-            self.enemy_speed = randint(70,90)    
-            
-    def battle_enemy():
-        pass
+        elif self.monsters_type == 2:
+            self.monsters_strength = randint(50,70)
+            self.monsters_speed = randint(70,90)
+
+    #getting the information
+    def getEnemy(self):
+        self.monsterSTATS = [self.monsters_name, self.monsters_type, self.monsters_strength, self.monsters_speed, self.monsters_health]
+        return self.monsterSTATS
+
+    #so far this is what i have!
+    def battle_monsters(player, monster):
+        if player.maxhealth == 0 and monster.maxhealth > player.maxhealth:
+            print(f"{monster.monsters_name} has won the battle against {player.name}!")
+        elif(monster.maxhealth == 0 and player.maxhealth > monster.maxhealth):
+            print(f"{player.name} won and {monster.monsters_name} has been defeated!")
+        elif(player.maxhealth == 0 and monster.maxhealth == 0):
+            print()
+            print(f"{player.name} and {monster.monsters_name} has made amends!") 
+    
 
 class EmptyMaze():
     """
