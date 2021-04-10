@@ -107,6 +107,18 @@ class Player:
     #Temporarily we are using the pass functionality to 
     #act as a place holder for our battle_enemy method since we dont
     #have a proper method yet.
+    def buildEnemy(self):
+        monsters = ["Aaragorn", "Legolas", "Gimli", "Gandalf", "Golum", "Dufus", "Rico", "Joker"]
+        self.monsters_name = monsters[randint(0,7)]
+        self.monstersType = randint(1,2)
+        self.monsters_health = 100
+        if self.monsters_type == 1:
+            self.monsters_strength = randint(70,90)
+            self.monsters_speed = randint(50,70)
+        elif self.enemy_type == 2:
+            self.enemy_strength = randint(50,70)
+            self.enemy_speed = randint(70,90)    
+            
     def battle_enemy():
         pass
 
