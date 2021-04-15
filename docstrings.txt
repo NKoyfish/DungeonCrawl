@@ -1,3 +1,16 @@
+"""
+Brief Description: So there has been built an Enemy class that will store 3 methods that 
+we will be using such as the __init__ method that will initialize the monsters_name, 
+monsters_type, monsters_health, monsters_speed and monsters_strength and the maxhealth 
+of the enemy. We will be setting this in the near future allowing the monster to be created.
+These will be the attributes being used
+Attributes: 
+monsters_name (str) - this will be the monsters name
+monsters_type (str) - this iwll be the the type of monster that a player wants to battle
+monsters_health (int) - this will be the monsters health after it has been attacked
+monsters_speed (int) - this will be the ability of the monsters speed
+monsters_strength (float) - this will be the monsters strength.
+"""
 class Enemy:
         """
             i worked on the init method
