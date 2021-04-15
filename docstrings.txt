@@ -13,10 +13,35 @@ monsters_strength (float) - this will be the monsters strength.
 """
 class Enemy:
         """
-            i worked on the init method
+            Args: 
+                monsters_name (str) - this will be the monsters name
+                monsters_type (str) - this iwll be the the type of monster that a player wants to battle
+                monsters_health (int) - this will be the monsters health after it has been attacked
+                monsters_speed (int) - this will be the ability of the monsters speed
+                monsters_strength (float) - this will be the monsters strength.
         """
         def __init__(self, monsters_name, monsters_type, monsters_health, monsters_speed, monsters_strength, \
         maxhealth):
+            """
+                Args: 
+                    self - which references self represents the instance of the class. By using the self
+                    keyword we can access the attributes and methods of the class in python
+                
+                Explaination: 
+                    created a list called monsters which will hold all of the monsters 
+                    that we have allocated within the list and that we are going to use 
+                    within the maze.
+                    here we are referencing the monsters_name which will then
+                    grab a monster randomly using the randint function between 0-7 
+                    so anyone one of them from the list.
+                    - we are then setting the monsters type to either be 1 or 2 this will 
+                    be determined by randomizer.
+                    - monsters_health is then set at 100 and based on the attack and damage
+                    the health level will increase.
+                    - write a conditional that will determine strength or speed, depending
+                    on whether the randomizer chose 1 or 2 as the monster to fight the player. 
+
+            """
             self.monsters_name = monsters_name
             self.monsters_type = monsters_type
             self.monsters_health = monsters_health
