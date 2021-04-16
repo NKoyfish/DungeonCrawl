@@ -1,124 +1,24 @@
-"""
-Brief Description: So there has been built an Enemy class that will store 3 methods that 
-we will be using such as the __init__ method that will initialize the monsters_name, 
-monsters_type, monsters_health, monsters_speed and monsters_strength and the maxhealth 
-of the enemy. We will be setting this in the near future allowing the monster to be created.
-These will be the attributes being used
-Attributes: 
-monsters_name (str) - this will be the monsters name
-monsters_type (str) - this iwll be the the type of monster that a player wants to battle
-monsters_health (int) - this will be the monsters health after it has been attacked
-monsters_speed (int) - this will be the ability of the monsters speed
-monsters_strength (float) - this will be the monsters strength.
-"""
-class Enemy:
-        """
-            Args: 
-                monsters_name (str) - this will be the monsters name
-                monsters_type (str) - this iwll be the the type of monster that a player wants to battle
-                monsters_health (int) - this will be the monsters health after it has been attacked
-                monsters_speed (int) - this will be the ability of the monsters speed
-                monsters_strength (float) - this will be the monsters strength.
-        """
-        def __init__(self, monsters_name, monsters_type, monsters_health, monsters_speed, monsters_strength, \
-        maxhealth):
-            """
-                Args: 
-                    self - which references self represents the instance of the class. By using the self
-                    keyword we can access the attributes and methods of the class in python
-                
-                Explaination: 
-                    created a list called monsters which will hold all of the monsters 
-                    that we have allocated within the list and that we are going to use 
-                    within the maze.
-                    here we are referencing the monsters_name which will then
-                    grab a monster randomly using the randint function between 0-7 
-                    so anyone one of them from the list.
-                    - we are then setting the monsters type to either be 1 or 2 this will 
-                    be determined by randomizer.
-                    - monsters_health is then set at 100 and based on the attack and damage
-                    the health level will increase.
-                    - write a conditional that will determine strength or speed, depending
-                    on whether the randomizer chose 1 or 2 as the monster to fight the player. 
 
-            """
-            self.monsters_name = monsters_name
-            self.monsters_type = monsters_type
-            self.monsters_health = monsters_health
-            self.monsters_speed = monsters_speed
-            self.monsters = monsters_strength 
-            self.maxhealth = maxhealth
-        def buildEnemy(self):
-            """
-                Args: 
-                    self - which references self represents the instance of the class. By using the self
-                    keyword we can access the attributes and methods of the class in python
-                    
-                Explaination: 
-                    created a list called monsters which will hold all of the monsters 
-                    that we have allocated within the list and that we are going to use 
-                    within the maze.
-                    here we are referencing the monsters_name which will then
-                    grab a monster randomly using the randint function between 0-7 
-                    so anyone one of them from the list.
-                    - we are then setting the monsters type to either be 1 or 2 this will 
-                    be determined by randomizer.
-                    - monsters_health is then set at 100 and based on the attack and damage
-                    the health level will increase.
-                    - write a conditional that will determine strength or speed, depending
-                    on whether the randomizer chose 1 or 2 as the monster to fight the player. 
-
-            """
-            monsters = ["Aaragorn", "Legolas", "Gimli", "Gandalf", "Golum", "Dufus", "Rico", "Joker"]
-            self.monsters_name = monsters[randint(0,7)]
-            self.monsters_type = randint(1,2)
-            self.monsters_health = 100
-
-            if self.monsters_type == 1:
-                self.monsters_strength = randint(70,90)
-                self.monsters_speed = randint(50,70)
-            elif self.monsters_type == 2:
-                self.monsters_strength = randint(50,70)
-                self.monsters_speed = randint(70,90) 
-
-    #getting the information
-        def getEnemy(self):
-            """
-                Args: 
-                    self - which references self represents the instance of the class. By using the self
-                    keyword we can access the attributes and methods of the class in python
-                Explanation:
-                    since all the information about the monster info is in a list, we have put the monsters info 
-                    in a list which will then be used to stored the stats of the monster to determine 
-                    if the player would like to battle the monster or just run away from the monster.
-                Returns:
-                    will be returning the stats by being specific and saying that we need to grab
-                    the self.monsterSTATS which will reference the criteria on it.
+revealMap(self,player,player_inventory):
+    """This reveals the game map if it is in the players inventory
+    
+        Args:
+            player(String): The name of the payer in the game
+            player_inventory(string): uses code of loops and conditional statements to 
+            search through the players inventory to find the map.
+        Returns:
+            map: returns the map if found in players inventory returns none if not found
+    """
 
 
-            """
-            self.monsterSTATS = [self.monsters_name, self.monsters_type, self.monsters_strength, self.monsters_speed, self.monsters_health]
-            return self.monsterSTATS
 
 
-        def battle_monsters(player, monster):
-            """
-                Args:
-                    player (str) - this will be the player as a string that we are going to be using to battle
-                    the monster.
-                    monster (str) - this will be monster as a string and using it to battle our player object.__base__
-                Brief Description:
-                    here we are making a conditional that will determine who has won the battle.
-                    the first criteria would be if the player has no health and the monsters health 
-                    is greater than the plyaer the monster has won the match. otherwise the monster has won.
-                    if the player and monsters health has reached a limit of 0, then that means that 
-                    there has been a draw and nobody has won. maybe there could be a rematch.
+jumpWall(self, player):
+    """this enables players who have the ability to jump over walls in the maze to be able to do so
+         
+        Args:
+            player(String): The name of the player in the game
+            it will evaluate the player and see if they have the ability to do so and if they can 
+            to execute, if not then the the code will break
+     """
 
-            """
-            if player.maxhealth == 0 and monster.maxhealth > player.maxhealth:
-                print(f"{monster.monsters_name} has won the battle against {player.name}!")
-            elif(monster.maxhealth == 0 and player.maxhealth > monster.maxhealth):
-                print(f"{player.name} won and {monster.monsters_name} has been defeated!")
-            elif(player.maxhealth == 0 and monster.maxhealth == 0):
-                print()
-                print(f"{player.name} and {monster.monsters_name} has made amends!") 
