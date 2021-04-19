@@ -7,10 +7,14 @@ up of cells with various obsID that represent different things you might
 encounter in a dungeon. The goal of the player is to make it to the end of the
 maze while collecting treasure and killing monsters along their path. Players
 also run the risk of starving if they do not navigate through the dungeon quick
-enough. Players have an inventory of tools that may aid them in their journey
+enough. Players have an inventory of tools that may aid them in their journey.
+
+HOW TO RUN: python dungeon_crawl.py -filename maze3.txt
+            or python dungeon_crawl.py
 """
 from argparse import ArgumentParser
 import sys
+import curses
 import tempfile
 import os
 import math
@@ -37,6 +41,8 @@ class Cell:
         traveled: (Boolean) True if a player has traveled there or false if not
         playerthere: (Boolean) Represents if player is currently occupying Cell
         revealed: (Boolean) True if the player has traveled near the Cell
+        isBorder: (Boolean) True if moving a Cell up left down or right isn't
+                  a key
                     
     """
     def __init__(self,col,row,obsID):
@@ -54,6 +60,7 @@ class Cell:
         self.traveled = False
         self.playerthere = False
         self.revealed = False
+        self.isBorder = False
 
     def __repr__(self):
         """
@@ -78,11 +85,21 @@ class Player:
             name (str):         Represents the player
             health (float):     How much damage the player can take. Die at 0.
             maxHealth (float):  Cap of HP
-            attack (float):  How much damage the player does.
+            attack (float):     How much damage the player does.
             hunger (float):     How full the player is. 0 hunger is starving.
                                 Starving players deal reduced damage and take 1
                                 damage a turn
-    """
+            battlesFought (int):How many battles the player has fought
+            battlesWon (int):   How many battles the player has won
+            treasureFound (int):How many T cells the player has passed over
+            inventory (Dict):   A dictionary of strings representing items.
+                                Values are ints representing the quantity owned
+            abilityList (Dict): A dictionary of (str) skills the player can use 
+                                and the remaining cooldown time until a skill 
+                                can be used again. Every movement the player
+                                makes reduces the cooldown (Value) by one. Rest
+                                reduces the cooldown by 5.
+    """                     
     def __init__(self,name,health,attack,hunger):
         """
         Initializes a new Player object
@@ -97,6 +114,7 @@ class Player:
                 starve (boolean): Is the player at 0 hunger?
         Side effects: Initializes a new Player object
         """
+        self.abilityList = {"break": 0, "jump": 0}
         self.name = name
         self.health = health
         self.maxhealth = health
@@ -184,7 +202,7 @@ def strike(entity1,entity2):
     if randint(0,100) < critChance:
         critDmg = 2.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
-        entity2.hp -= critDmg * randint[entity1.attack*.9,entity1.attack*1.1]
+        entity2.health -= critDmg * randint[entity1.attack*.9,entity1.attack*1.1]
 def battle_monsters(player, monster):
     """
     Args:
@@ -204,19 +222,28 @@ def battle_monsters(player, monster):
         playerFaster = player.speed > monster.speed
         if playerFaster:
             strike(player,monster)
-            if player.maxhealth == 0 and monster.maxhealth > player.maxhealth:
-                print(f"{monster.name} has won the battle against {player.name}!")
-            elif(monster.maxhealth == 0 and player.maxhealth > monster.maxhealth):
-                print(f"{player.name} won and {monster.name} has been defeated!")
-            elif(player.maxhealth == 0 and monster.maxhealth == 0):
-                print(f"{player.name} and {monster.name} have slain each other!") 
+            if player.health == 0 and monster.health > player.health:
+                print(f"{monster.name} has won the battle against\
+                     {player.name}!")
+            elif(monster.health == 0 and player.health > \
+                monster.health):
+                print(f"{player.name} won and {monster.name} \
+                    has been defeated!")
+            elif(player.health == 0 and monster.health == 0):
+                print(f"{player.name} and {monster.name} \
+                    have slain each other!") 
             strike(monster,player)
-            if player.maxhealth == 0 and monster.maxhealth > player.maxhealth:
-                print(f"{monster.name} has won the battle against {player.name}!")
-            elif(monster.maxhealth == 0 and player.maxhealth > monster.maxhealth):
-                print(f"{player.name} won and {monster.name} has been defeated!")
-            elif(player.maxhealth == 0 and monster.maxhealth == 0):
-                print(f"{player.name} and {monster.name} have slain each other!")
+            if player.health == 0 and monster.health > player.health:
+                print(f"{monster.name} has won the battle against \
+                    {player.name}!")
+            elif(monster.health == 0 and player.health \
+                > monster.health):
+                print(f"{player.name} won and {monster.name}\
+                     has been defeated!")
+            elif(player.health == 0 and monster.health == 0):
+                print(f"{player.name} and {monster.name}\
+                     have slain each other!")
+            strike(monster,monster)
 class EmptyMaze():
     """
     An EmptyMaze is created when generateSimpleMaze() is called.
@@ -364,7 +391,7 @@ class Maze():
                 self.modulePts = [self.modulePts[0],\
                     self.modulePts[len(self.modulePts)-1]]
         self.revealSurround()
-    
+        self.setBorders()
     def printMaze(self,player,bool = False):
         """
         prints the maze for the user to see current progress 
@@ -421,7 +448,7 @@ class Maze():
                             f.write("\n")
                 maxrowcount +=1
             
-    def breakWall(self,direction,player):
+    def breakWall(self,player):
         """
         breakWall allows a player to destroy a non bordering wall
         that are in proximity to the player (1 Cell away).
@@ -433,10 +460,29 @@ class Maze():
         Side effects: Breaks a non bordering wall in front of the player.
         """
         row,col = self.currentTuple
+        choose = False
+        breakable = ["c"]
         dirs = { "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+"\
             , "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
                  "right":"("+str(row)+", "+str(col+1)+")"}
-        
+        if player.abilityList["break"] == 0:
+            for wallCheck in dirs:
+                if dirs[wallCheck] in self.tuplemaze.keys():
+                    if self.tuplemaze[dirs[wallCheck]].obsID == "=" and \
+                        not self.tuplemaze[dirs[wallCheck]].isBorder:
+                        breakable.append(wallCheck)
+            if len(breakable) > 1:
+                while not choose:
+                    print(breakable)
+                    choice = input("What wall would you like to break or 'c' to cancel\n")
+                    if choice == "c":
+                        break
+                    elif choice in breakable:
+                        self.tuplemaze[dirs[choice]].obsID = " "
+                        player.abilityList["break"] = 5
+                        choose = True
+            else: print("No wall to break")
+        else: print("Break on cooldown for",player.abilityList["break"],"turns")
     def useTorch(self,player):
         """
         Torches are used by the player to reveal an extra tile of area around 
@@ -452,7 +498,6 @@ class Maze():
         """
     pass #not yet implemented
     
-
     def getScore(self,player):
         """
         Calculates a score based off player attribute values, battles won, and
@@ -558,14 +603,18 @@ class Maze():
                 self.currentTuple = pos1
             self.tuplemaze[str(self.currentTuple)].playerthere = True
             self.tuplemaze[str(self.currentTuple)].revealed = True
-        if moved: #reduce hunger or health
+        if moved: #reduce hunger or health and cooldowns
+            for ability in player.abilityList.keys():
+                if player.abilityList[ability] > 0:
+                    player.abilityList[ability] -= 1
             if player.hunger > 0:
                 player.hunger -= 1
             else: player.health -=1
 
             if player.health == 0: #death check
                 print(f"{player.name} has died of starvation")
-
+        elif resp == "b": #breakWall
+            self.breakWall(player)
         elif resp == "p": # used primarily for debugging
             print(self.currentTuple)
 
@@ -578,7 +627,30 @@ class Maze():
         
         else: print("invalid direction or action")
         self.revealSurround()
-    
+    def setBorders(self):
+        #print([self.tuplemaze[cell].obsID for cell in self.tuplemaze.keys()])
+        for cell in self.tuplemaze.keys():
+            cellKey = cell
+            cell = cell.replace("(","")
+            cell = cell.replace(")","")
+            row = int(cell.split(", ") [0])
+            col =  int(cell.split(", ") [1])
+            #print(row,col)
+            dirs = { "up":"("+str(row-1)+", "+str(col)+")",\
+                "down":"("+str(row+1)+", "+str(col)+")",\
+                "left":"("+str(row)+", "+str(col-1)+")",\
+                "right":"("+str(row)+", "+str(col+1)+")"}
+
+            for dire in dirs.keys():
+                if dirs[dire] not in self.tuplemaze.keys():
+                    self.tuplemaze[cellKey].isBorder = True
+    def getBorder(self):
+        borderList = []
+        for cell in self.tuplemaze.keys():
+            if self.tuplemaze[cell].isBorder:
+                borderList.append(cell)
+        return borderList
+
     def revealSurround(self):
         """
         Reveals the surrounding maze area (one cell away from the player 
@@ -588,7 +660,7 @@ class Maze():
         """
         row,col = self.currentTuple
         dirs ={ "up":"("+str(row-1)+", "+str(col)+")",\
-                "down":"("+str(row+1)+",\ "+str(col)+")",
+                "down":"("+str(row+1)+", "+str(col)+")",
                 "left":"("+str(row)+", "+str(col-1)+")", \
                 "right":"("+str(row)+", "+str(col+1)+")",\
                 "upl":"("+str(row-1)+", "+str(col-1)+")",
@@ -648,7 +720,8 @@ def generateSimpleMaze():
             random.randint(1,newMaze.maxCol-1))
         erow,ecol = (random.randint(1,newMaze.maxRow-1),\
             random.randint(1,newMaze.maxCol-1))
-        if (str(srow),str(scol)) != (str(erow),str(ecol)):
+        if "("+ str(srow) + "," + str(scol) + ")" \
+        != "("+ str(erow) + "," + str(ecol) + ")":
             startloc = "("+ str(srow)+", "+ str(scol)+")"
             endloc = "("+ str(erow)+", "+ str(ecol)+")"
             newMaze.tuplemaze[startloc].obsID="S"
@@ -671,7 +744,7 @@ def generateSimpleMaze():
             ancR = True
         if anchorcol not in illegalcol:
             ancC = True
-    print((anchorrow,anchorcol))
+    #print((anchorrow,anchorcol))
     r = 0
     c = 0
     #make a wall vertical or horizontal from the anchor point
@@ -742,9 +815,14 @@ def main(maze,hunger = 50):
     newMaze= Maze(maze,player)
     #print(f"Max c: {newMaze.maxCol}, Max r: {newMaze.maxRow}")
     newMaze.printMaze(player)
+    #borders = set(newMaze.getBorder())
+    #cells = set(newMaze.tuplemaze.keys())
+    #diff = cells - borders
+    #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player)
         newMaze.printMaze(player)
+        newMaze.getBorder()
     if player.health == 0:
         print("\nGame Over!")
         newMaze.printMaze(player,True)
