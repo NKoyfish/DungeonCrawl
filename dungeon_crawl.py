@@ -18,7 +18,9 @@ import curses
 import tempfile
 import os
 import math
-import random
+from random import randint
+from math import factorial  
+
 
 class Cell:
     """
@@ -143,7 +145,7 @@ class Enemy:
     type (str) - type of monster being battled
     health (int) - this will be the monsters health
     speed (int) - this will be the ability of the monsters speed
-    attack (float) - this will be the monsters attack damage.
+    attack (float) - this will be the monsters attack damage. 
     """
     def __init__(self):
         """
@@ -164,7 +166,7 @@ class Enemy:
         monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
              "Skeleton", "Ghoul", "Lizardman", "Spectre"]
         self.name = monsters[randint(0,7)]
-        montype = random.choice([1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
+        montype = random.choice([1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5]) 
         
         if montype == 1:
             self.attack = randint(40,60)
@@ -207,7 +209,7 @@ def strike(entity1,entity2):
     if randint(0,100) < critChance:
         critDmg = 2.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
-        entity2.health -= critDmg * randint[entity1.attack*.9,entity1.attack*1.1]
+        entity2.health -= critDmg * randint(entity1.attack*.9,entity1.attack*1.1)
 def battle_monsters(player, monster):
     """
     Args:
@@ -249,6 +251,27 @@ def battle_monsters(player, monster):
                 print(f"{player.name} and {monster.name}\
                      have slain each other!")
             strike(monster,monster)
+
+def turn(enemy, player):
+    if enemy.health == 0 and player.health > enemy.health:
+        print(f"{player.name} wins!")
+    elif(player.health == 0 and enemy.health > player.health):
+        print(f"{enemy.name} wins!")
+    
+    else:
+        while enemy.health >0 and player.health >0:
+            enemy.attack(player)
+            player.attack(enemy)
+            print(f"{enemy.name} has {enemy.health} max health.")
+            print(f"{player.name} has {player.health} max health.") 
+            
+        if enemy.health > 0 and player.health <= 0:
+            print(f"{enemy.name} wins!")
+        elif (player.health > 0 and enemy.health <=0):
+            print(f"{player.name} wins!") 
+
+
+
 class EmptyMaze():
     """
     An EmptyMaze is created when generateSimpleMaze() is called.
@@ -505,9 +528,9 @@ class Maze():
                         revealSurround() works, increases player accuracy
                         and may increase or decrease an Enemy class objects' dmg
         """
-    pass #not yet implemented
+        pass #not yet implemented
     
-    def getScore(self,player):
+    def getScore(self,player, enemy):
         """
         Calculates a score based off player attribute values, battles won, and
         treasure obtained.
@@ -515,7 +538,33 @@ class Maze():
         Returns: (Float) score value of the maze run after a run finishes via
                  player death or dungeon completion 
         """
-        pass #not yet implemented
+        count = 0
+
+        print("----------Scoreboard---------")  
+        if enemy.health == 0 and player.health > enemy.health:
+            print(f"{player.name} wins!")
+            count +=1
+            print("this is the score: ", count)
+        elif(player.health == 0 and enemy.health > player.health):
+            print(f"{enemy.name} wins!")
+            count +=1
+            print(f"The {enemy.name}'s score is: ", count)
+    
+        else:
+            while enemy.health >0 and player.health >0:
+                enemy.attack(player)
+                player.attack(enemy)
+                print(f"{enemy.name} has {enemy.health} max health.")
+                print(f"{player.name} has {player.health} max health.") 
+            
+            if enemy.health > 0 and player.health <= 0:
+                print(f"{enemy.name} wins!")
+                count +=1
+                print("Score of enemy: ", count)
+            elif (player.health > 0 and enemy.health <=0):
+                print(f"{player.name} wins!") 
+                count +=1
+                print("Score of player: ", count) 
 
     def revealMap(self,player):
         """
