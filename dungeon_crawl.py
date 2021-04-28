@@ -252,6 +252,7 @@ def battle_monsters(player, monster):
                      have slain each other!")
             strike(monster,monster)
 
+""" Nelson C- Worked on the turn method!"""
 def turn(enemy, player):
     if enemy.health == 0 and player.health > enemy.health:
         print(f"{player.name} wins!")
@@ -268,7 +269,7 @@ def turn(enemy, player):
         if enemy.health > 0 and player.health <= 0:
             print(f"{enemy.name} wins!")
         elif (player.health > 0 and enemy.health <=0):
-            print(f"{player.name} wins!") 
+            print(f"{player.name} wins!")
 
 
 
