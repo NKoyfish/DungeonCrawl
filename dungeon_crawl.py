@@ -61,6 +61,7 @@ class Cell:
         self.playerthere = False
         self.revealed = False
         self.isBorder = False
+        self.isInvisibleBorder = False
 
     def __repr__(self):
         """
@@ -69,9 +70,13 @@ class Cell:
                  if the player is occupying the cell. 
         """
         if not self.playerthere and self.revealed:
-            return (self.obsID)
+            if self.obsID != "/":
+                return (self.obsID)
+            else: return " "
         if not self.revealed:
-            return "?"
+            if self.obsID != "/":
+                return "?"
+            else: return " "
         else:
             return "P"
 
@@ -369,6 +374,10 @@ class Maze():
                         elif char == "B":
                             newCell = Cell(col,row,"B")
                             self.tuplemaze[strTuple] = newCell
+                        elif char == "/":
+                            newCell = Cell(col,row,"/")
+                            newCell.isInvisibleBorder = True
+                            self.tuplemaze[strTuple] = newCell
                         elif char.isdigit(): #stairs
                             newCell = Cell(col,row,char)
                             newCell.obsID = char
@@ -462,8 +471,8 @@ class Maze():
         row,col = self.currentTuple
         choose = False
         breakable = ["c"]
-        dirs = { "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+"\
-            , "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
+        dirs = { "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+\
+        ", "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
                  "right":"("+str(row)+", "+str(col+1)+")"}
         if player.abilityList["break"] == 0:
             for wallCheck in dirs:
@@ -540,7 +549,7 @@ class Maze():
                         revealSurround()
         """
         resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n \
-        Other: (Rest), or (p)osition\n")
+        Other: (Rest), (B)reak Wall or (P)osition\n")
         moved = False
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
         row,col = tupUp
@@ -613,7 +622,7 @@ class Maze():
 
             if player.health == 0: #death check
                 print(f"{player.name} has died of starvation")
-        elif resp == "b": #breakWall
+        elif resp.lower() == "b": #breakWall
             self.breakWall(player)
         elif resp == "p": # used primarily for debugging
             print(self.currentTuple)
@@ -624,7 +633,11 @@ class Maze():
                 if player.health > player.maxhealth:
                     player.health = player.maxhealth
                 player.hunger -= 10
-        
+                for ability in player.abilityList.keys():
+                    if player.abilityList[ability] > 0:
+                        player.abilityList[ability] -= 5
+                    if player.abilityList[ability] < 0:
+                        player.abilityList[ability] = 0
         else: print("invalid direction or action")
         self.revealSurround()
     def setBorders(self):
@@ -642,7 +655,7 @@ class Maze():
                 "right":"("+str(row)+", "+str(col+1)+")"}
 
             for dire in dirs.keys():
-                if dirs[dire] not in self.tuplemaze.keys():
+                if dirs[dire] not in self.tuplemaze.keys() or self.tuplemaze[dirs[dire]].obsID == "/":
                     self.tuplemaze[cellKey].isBorder = True
     def getBorder(self):
         borderList = []
