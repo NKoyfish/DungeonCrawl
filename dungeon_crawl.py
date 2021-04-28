@@ -19,6 +19,7 @@ import tempfile
 import os
 import math
 from random import randint
+import random
 from math import factorial  
 
 
@@ -467,7 +468,6 @@ class Maze():
         """
         with open(file,"w") as f:
             maxrowcount = 0
-            r = 0
             print("max",self.maxRow)
             while maxrowcount < self.maxRow+1:
                 for c in range(self.maxCol+1):
@@ -571,16 +571,13 @@ class Maze():
         """
         This reveals the game map if it is in the players inventory
         Args:
-            player(Player): The name of the payer in the game
+            player(Player): The p;ayer in the game
             search through the players inventory to find the map.
         Side effects: Makes the map entire layout visible and reveals treasure
         """
         if player.inventory["map"] == 1:
             for cell in self.tuplemaze.keys():
                 self.tuplemaze[cell].revealed = True
-        
-        
-        print("Not yet implemented yet")
 
     def jumpWall(self, player):
         """
@@ -610,7 +607,7 @@ class Maze():
             if len(jumpable) > 1:
                 while not choose:
                     print(jumpable)
-                    choice = input("which direction do you want to go to or enter c to quit\n")
+                    choice = input("Which wall do you want to jump? Or 'c' to quit\n")
                     if choice == "c":
                         break
                     elif choice in jumpable:
@@ -627,9 +624,10 @@ class Maze():
                         player.abilityList["jump"] = 5
                         choose = True
             else:
-                print("their is no wall to jump")
+                print("There is no wall to jump over")
         else:
-            print("jump is still on cool down")
+            j = "jump"
+            print(f"Jump is still on cooldown for {player.abilityList[j]} turns")
      
     def move(self,player):
         """
@@ -642,8 +640,8 @@ class Maze():
                         player health and hunger. Maze revealed via
                         revealSurround()
         """
-        resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n \
-        Other: (Rest), (B)reak Wall or (P)osition\n")
+        resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n\
+Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
         moved = False
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
         row,col = tupUp
@@ -652,7 +650,6 @@ class Maze():
             tupNewUp = "("+str(row-1)+", "+str(col)+")"
             if tupNewUp in self.tuplemaze.keys() and \
                 self.tuplemaze[tupNewUp].obsID != "=":
-
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row-1,col)
                 self.tuplemaze[tupNewUp].playerthere = True
@@ -661,10 +658,8 @@ class Maze():
         elif resp in ["d","down"]:
             up = str(self.currentTuple)
             tupNewUp = "("+str(row+1)+", "+str(col)+")"
-
             if tupNewUp in self.tuplemaze.keys() and \
                 self.tuplemaze[tupNewUp].obsID != "=":
-
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row+1,col)
                 self.tuplemaze[tupNewUp].playerthere = True
@@ -675,7 +670,6 @@ class Maze():
             tupNewUp = "("+str(row)+", "+str(col-1)+")"
             if tupNewUp in self.tuplemaze.keys() and\
                 self.tuplemaze[tupNewUp].obsID != "=":
-
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row,col-1)
                 self.tuplemaze[tupNewUp].playerthere = True
@@ -686,7 +680,6 @@ class Maze():
             tupNewUp = "("+str(row)+", "+str(col+1)+")"
             if tupNewUp in self.tuplemaze.keys() and\
                 self.tuplemaze[tupNewUp].obsID != "=":
-
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row,col+1)
                 self.tuplemaze[tupNewUp].playerthere = True
@@ -718,6 +711,8 @@ class Maze():
                 print(f"{player.name} has died of starvation")
         elif resp.lower() == "b": #breakWall
             self.breakWall(player)
+        elif resp.lower() == "j": #jumpWall
+            self.jumpWall(player)
         elif resp == "p": # used primarily for debugging
             print(self.currentTuple)
 
@@ -797,7 +792,7 @@ def generateSimpleMaze():
         while not roomConditionMet:
             rowsize = int(input("How many rows? (Enter value >= 6)\n"))
             colsize = int(input("How many columns? (Enter value >= 6)\n"))
-            mazeArea = (rowsize-2)*(colsize-2)
+            #mazeArea = (rowsize-2)*(colsize-2)
             if colsize >= 6 and rowsize >= 6:
                 roomConditionMet = True
             else:
