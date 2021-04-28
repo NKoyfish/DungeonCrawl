@@ -516,6 +516,35 @@ class Maze():
                  player death or dungeon completion 
         """
         pass #not yet implemented
+        count = 0
+
+        print("----------Scoreboard---------")
+        if enemy.health == 0 and player.health > enemy.health:
+            print(f"{player.name} wins!")
+            count +=1
+            print("this is the score: ", count)
+        elif(player.health == 0 and enemy.health > player.health):
+            print(f"{enemy.name} wins!")
+            count +=1
+            print(f"The {enemy.name}'s score is: ", count)
+    
+        else:
+            while enemy.health >0 and player.health >0:
+                enemy.attack(player)
+                player.attack(enemy)
+                print(f"{enemy.name} has {enemy.health} max health.")
+                print(f"{player.name} has {player.health} max health.") 
+            
+            if enemy.health > 0 and player.health <= 0:
+                print(f"{enemy.name} wins!")
+                count +=1
+                print("Score of enemy: ", count)
+            elif (player.health > 0 and enemy.health <=0):
+                print(f"{player.name} wins!") 
+                count +=1
+                print("Score of player: ", count)
+
+
 
     def revealMap(self,player):
         """
