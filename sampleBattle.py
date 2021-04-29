@@ -47,6 +47,9 @@ class Player:
         Side effects: Initializes a new Player object
         """
         self.abilityList = {"break": 0, "jump": 0}
+        self.inventory = {"map": 0, "sword": {"equip": attack, "unequip": [] },
+        "armor" : {"equip": ("tunic", 0, 0, 5), "unequip": []}, "small core": 0, "medium core":0
+        , "large core": 0}
         self.name = name
         self.health = health
         self.maxhealth = health
@@ -89,9 +92,9 @@ class Enemy:
 
         """
         monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
-             "Skeleton", "Ghoul", "Lizardman", "Spectre"]
+            "Skeleton", "Ghoul", "Lizardman", "Spectre"]
         self.name = monsters[randint(0,7)]
-        montype = random.choice([1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
+        montype = random.choice([1,1,1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
         
         if montype == 1:
             self.attack = randint(40,60)
@@ -113,7 +116,37 @@ class Enemy:
             self.attack = randint(80,100)
             self.speed = randint(60,70)
             self.name = "Ancient " + self.name
-        self.health = factorial(montype) * 5 + 100 
+        self.health = factorial(montype) * 5 + 100
+        #balance
+        self.attack /= 2 
+        if "Zombie" in self.name:
+            self.health *= .9
+            self.attack += 3
+            self.speed -= 30
+        elif "Kobold" in self.name:
+            self.health *= .7
+            self.speed += 5
+            self.attack += 7
+        elif "Skeleton" in self.name:
+            self.health *= .6
+            self.attack -= 3
+            self.speed += 12
+        elif "Orc" in self.name:
+            self.health *= .4
+            self.attack -= 7
+            self.speed += 5
+        elif "Goblin" in self.name:
+            self.health *= 1.1
+            self.attack += 5
+        elif  "Lizard" in self.name:
+            self.speed += 8
+            self.attack *= 1.10
+        elif "Spectre" in self.name:
+            self.speed += 20
+            self.attack *= 1.8
+            self.health -= 30
+        else:
+            self.speed -= 30
     def __repr__(self):
         return self.name
 def strike(entity1,entity2):
@@ -134,7 +167,7 @@ def strike(entity1,entity2):
     
     if randint(0,100) < critChance:
         print(f"{entity1} sees a weak point in {entity2}")
-        critDmg = 2.5
+        critDmg = 1.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
         low = int(entity1.attack*.9)
         high = int(entity1.attack*1.1)
@@ -158,7 +191,7 @@ def battle_monsters(player, monster):
     """
     battleEnd = False
     while not battleEnd:
-        playerFaster = player.speed > monster.speed
+        playerFaster = player.speed >= monster.speed
         if playerFaster:
             if player.health <= 0 and monster.health > player.health:
                 print(f"{monster.name} has won the battle against {player.name}!")
@@ -186,30 +219,36 @@ def battle_monsters(player, monster):
                 sleep(.2)
         else:
             if player.health <= 0 and monster.health > player.health:
-                print(f"{monster.name} has won the battle against \
-            {player.name}!")
+                print(f"{monster.name} has won the battle against {player.name}!")
+                if isinstance(player,Player):
+                    player.battlesWon += 1
+                    player.battlesFought += 1
                 battleEnd = True
             elif(monster.health <= 0 and player.health \
                 > monster.health):
                 print(f"{player.name} won and {monster.name} has been defeated!")
+                if isinstance(player,Player):
+                    player.battlesWon += 1
+                    player.battlesFought += 1
                 battleEnd = True
-            elif(player.health <= 0 and monster.health <= 0):
+            elif(player.health <= 0 and monster.health <= 0):#should never get here
                 print(f"{player.name} and {monster.name} have slain each other!")
                 battleEnd = True
             if not battleEnd:
                 strike(monster,player)
                 sleep(.2)
             if player.health <= 0 and monster.health > player.health:
-                print(f"{monster.name} has won the battle against \
-            {player.name}!")
+                print(f"{monster.name} has won the battle against {player.name}!")
                 battleEnd = True
             elif(monster.health <= 0 and player.health \
             > monster.health):
                 print(f"{player.name} won and {monster.name} has been defeated!")
+                if isinstance(player,Player):
+                    player.battlesWon += 1
+                    player.battlesFought += 1
                 battleEnd = True
             elif(player.health <= 0 and monster.health <= 0):
-                print(f"{player.name} and {monster.name}\
-            have slain each other!")
+                print(f"{player.name} and {monster.name} have slain each other!")
                 battleEnd = True
             if not battleEnd:
                 strike(player,monster)
@@ -217,6 +256,7 @@ def battle_monsters(player, monster):
 
 enemy1 = Enemy()   
 enemy2 = Enemy()
+player = Player("Nick",200,50,40)
 print(f"{enemy1} has {enemy1.health}, {enemy2} has {enemy2.health}")
-battle_monsters(enemy1,enemy2)
+battle_monsters(player,enemy2)
 print(f"{enemy1} has {enemy1.health}, {enemy2} has {enemy2.health}")

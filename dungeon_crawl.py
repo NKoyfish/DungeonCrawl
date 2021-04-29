@@ -15,6 +15,7 @@ HOW TO RUN: python dungeon_crawl.py -filename maze3.txt
 from argparse import ArgumentParser
 import sys
 import curses
+from time import sleep
 import tempfile
 import os
 import math
@@ -122,6 +123,9 @@ class Player:
                 starve (boolean): Is the player at 0 hunger?
         Side effects: Initializes a new Player object
         """
+        self.inventory = {"map": 0, "sword": {"equip": attack, "unequip": [] },
+        "armor" : {"equip": ("tunic", 0, 0, 5), "unequip": []}, "small core": 0, "medium core":0
+        , "large core": 0}
         self.abilityList = {"break": 0, "jump": 0}
         self.name = name
         self.health = health
@@ -530,7 +534,42 @@ class Maze():
                         and may increase or decrease an Enemy class objects' dmg
         """
         pass #not yet implemented
-    
+    def generateTreasure(self,player):
+        treasureRoll = randint(0,100)
+        addItem = ""
+        quantRoll = random.choice([1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,4,5,5,10])
+        if treasureRoll >= 95 and treasureRoll <= 100:
+            addItem = "Diamond"
+        elif treasureRoll >= 80 and treasureRoll < 95:
+            addItem = "Gold"
+        elif treasureRoll >= 60 and treasureRoll < 80:
+            addItem = "Emerald"
+        elif treasureRoll >= 50 and treasureRoll < 60:
+            addItem = "Silver"
+        elif treasureRoll >= 35 and treasureRoll < 50:
+            addItem = "Bronze"
+        elif treasureRoll >= 20 and treasureRoll < 35:
+            addItem = "Copper"
+        elif treasureRoll >= 10 and treasureRoll < 20:
+            addItem = "Amber"
+        else:
+            addItem = "Nugget"
+        if addItem in ["Diamond","Emerald"]:
+            piece = "gem"
+        elif addItem in ["Silver", "Bronze","Copper"]:
+            piece = "ore"
+        else:
+            piece = "piece"
+        if quantRoll > 1:
+            print(f"{player.name} has picked up {quantRoll} {addItem} {piece}s.")
+        else:
+            print(f"{player.name} has picked up one {addItem} {piece}.")
+
+        if addItem not in player.inventory.keys():
+            player.inventory[addItem] = quantRoll
+        else:
+            player.inventory[addItem] += quantRoll
+        
     def getScore(self,player, enemy):
         """
         Calculates a score based off player attribute values, battles won, and
@@ -643,6 +682,7 @@ class Maze():
         resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n\
 Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
         moved = False
+        msgWait = False
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
         row,col = tupUp
         if resp in ["u","up"]:
@@ -685,6 +725,9 @@ Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
                 self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
             else: print("A wall obstructs you")
+        elif resp.lower() == "j": #jumpWall
+            self.jumpWall(player)
+            moved = True
         if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():#stair check
             print("move from", self.currentTuple)
             print(self.tuplemaze[str(self.currentTuple)].playerthere)
@@ -709,10 +752,12 @@ Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
 
             if player.health == 0: #death check
                 print(f"{player.name} has died of starvation")
+            if player.health > 0 and self.tuplemaze[str(self.currentTuple)].obsID == "T":
+                self.generateTreasure(player)
+                msgWait = True
+                self.tuplemaze[str(self.currentTuple)].obsID = " "
         elif resp.lower() == "b": #breakWall
             self.breakWall(player)
-        elif resp.lower() == "j": #jumpWall
-            self.jumpWall(player)
         elif resp == "p": # used primarily for debugging
             print(self.currentTuple)
 
@@ -729,6 +774,8 @@ Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
                         player.abilityList[ability] = 0
         else: print("invalid direction or action")
         self.revealSurround()
+        if(msgWait):
+            sleep(1)
     def setBorders(self):
         #print([self.tuplemaze[cell].obsID for cell in self.tuplemaze.keys()])
         for cell in self.tuplemaze.keys():
@@ -924,7 +971,7 @@ def main(maze,hunger = 50):
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player)
         newMaze.printMaze(player)
-        newMaze.getBorder()
+        #newMaze.getBorder()
     if player.health == 0:
         print("\nGame Over!")
         newMaze.printMaze(player,True)
@@ -933,12 +980,8 @@ def main(maze,hunger = 50):
 def parse_args(arglist):
     """ Parse command-line arguments.
     
-    Expect two mandatory arguments:
+    Expect one mandatory arguments:
         - filename: name of the file
-        -
-    Optional Args to be ad:
-        - mobs: allows for roaming mobs to spawn 
-        - torch: reveals surrounding cells in a bigger area.
 
     Args:
         arglist (list of str): arguments from the command line.
