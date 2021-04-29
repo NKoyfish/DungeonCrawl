@@ -136,6 +136,29 @@ class Player:
         self.speed = 70
         self.starve = False
 
+    def getScore(self):
+
+        score = 0
+        for i in self.inventory.keys():
+            if i == "Diamond":
+                score += self.inventory[i]*100
+            elif(i == "Gold"):
+                score += self.inventory[i]*80
+            elif(i == "Emerald"):
+                score += self.inventory[i]*60
+            elif(i == "Silver"):
+                score += self.inventory[i]*50
+            elif(i == "Bronze"):
+                score += self.inventory[i]*35
+            elif(i == "Copper"):
+                score += self.inventory[i]*20
+            elif(i == "Amber"):
+                score += self.inventory[i]*15
+            elif(i == "Nugget"):
+                score += self.inventory[i]*10
+
+        return score
+
 class Enemy:
     """
     Nelson
@@ -566,41 +589,7 @@ class Maze():
         else:
             player.inventory[addItem] += quantRoll
         
-    def getScore(self,player, enemy):
-        """
-        Calculates a score based off player attribute values, battles won, and
-        treasure obtained.
-
-        Returns: (Float) score value of the maze run after a run finishes via
-                 player death or dungeon completion 
-        """
-        count = 0
-
-        print("----------Scoreboard---------")  
-        if enemy.health == 0 and player.health > enemy.health:
-            print(f"{player.name} wins!")
-            count +=1
-            print("this is the score: ", count)
-        elif(player.health == 0 and enemy.health > player.health):
-            print(f"{enemy.name} wins!")
-            count +=1
-            print(f"The {enemy.name}'s score is: ", count)
     
-        else:
-            while enemy.health >0 and player.health >0:
-                enemy.attack(player)
-                player.attack(enemy)
-                print(f"{enemy.name} has {enemy.health} max health.")
-                print(f"{player.name} has {player.health} max health.") 
-            
-            if enemy.health > 0 and player.health <= 0:
-                print(f"{enemy.name} wins!")
-                count +=1
-                print("Score of enemy: ", count)
-            elif (player.health > 0 and enemy.health <=0):
-                print(f"{player.name} wins!") 
-                count +=1
-                print("Score of player: ", count) 
 
     def revealMap(self,player):
         """

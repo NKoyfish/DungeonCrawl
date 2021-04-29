@@ -57,37 +57,27 @@ class Player:
         self.speed = 70
         self.starve = False
         player_choice = ["Nelson", "Ali", "Noble", "Nicholas"]
-        player_position = ["Player 1", "Player2", "Player 3", 4]
+        player_position = ["Player 1", "Player2", "Player 3", "Player 4"]
         self.name = player_choice[randint(0,4)]
-        montype = random.choice([])
+         = random.choice([])
         
         if player_choice == None:
             quit()
         else:
             self.name = player_choice[randint(0,4)]
-            if 
-        if montype == 1:
-            self.attack = randint(40,60)
-            self.speed = randint(30,50)
-            self.name = "Frail " + self.name
-        elif montype == 2:
-            self.attack = randint(50,65)
-            self.speed = randint(40,55)
-            self.name = "Haggard " + self.name
-        elif montype == 3:
-            self.attack = randint(60,75)
-            self.speed = randint(50,70)
-            self.name = "Skilled " + self.name
-        elif montype == 4:
-            self.attack = randint(75,95)
-            self.speed = randint(55,60)
-            self.name = "Elite " + self.name
-        else:
-            self.attack = randint(80,100)
-            self.speed = randint(60,70)
-            self.name = "Ancient " + self.name
-        self.health = factorial(montype) * 5 + 100 
-        
+            if player_choice == "Nelson" in player_choice.keys():
+                player_position == 0
+            elif player_choice == "Ali" in player_choice.keys():
+                player_position == 1
+            elif player_choice == "Noble" in player_choice:
+                player_position == 2
+
+                
+        #if montype == 1:
+            #self.attack = randint(40,60)
+            #self.speed = randint(30,50)
+            #self.name = "Frail " + self.name
+
     def getScore(self, player):
 
         score = 0
@@ -110,6 +100,8 @@ class Player:
                 score += self.inventory[i]*10
 
         return score
+    def __repr__():
+        
 
 class Enemy:
     """
