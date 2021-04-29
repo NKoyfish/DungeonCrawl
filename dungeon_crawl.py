@@ -235,15 +235,11 @@ def battle_monsters(player, monster):
         if playerFaster:
             strike(player,monster)
             if player.health == 0 and monster.health > player.health:
-                print(f"{monster.name} has won the battle against\
-                     {player.name}!")
-            elif(monster.health == 0 and player.health > \
-                monster.health):
-                print(f"{player.name} won and {monster.name} \
-                    has been defeated!")
+                print(f"{monster.name} has won the battle against {player.name}!")
+            elif(monster.health == 0 and player.health > monster.health):
+                print(f"{player.name} won and {monster.name} has been defeated!")
             elif(player.health == 0 and monster.health == 0):
-                print(f"{player.name} and {monster.name} \
-                    have slain each other!") 
+                print(f"{player.name} and {monster.name} have slain each other!") 
             strike(monster,player)
             if player.health == 0 and monster.health > player.health:
                 print(f"{monster.name} has won the battle against \
@@ -680,7 +676,7 @@ class Maze():
                         revealSurround()
         """
         resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n\
-Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
+    Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
         moved = False
         msgWait = False
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
