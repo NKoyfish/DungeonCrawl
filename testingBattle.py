@@ -7,6 +7,7 @@ import os
 from math import factorial
 import random
 from random import randint
+
 class Player:
     """
     A Player explores a Maze. While exploring the maze their hunger goes down.
@@ -55,6 +56,60 @@ class Player:
         self.maxhunger = hunger
         self.speed = 70
         self.starve = False
+        player_choice = ["Nelson", "Ali", "Noble", "Nicholas"]
+        player_position = ["Player 1", "Player2", "Player 3", 4]
+        self.name = player_choice[randint(0,4)]
+        montype = random.choice([])
+        
+        if player_choice == None:
+            quit()
+        else:
+            self.name = player_choice[randint(0,4)]
+            if 
+        if montype == 1:
+            self.attack = randint(40,60)
+            self.speed = randint(30,50)
+            self.name = "Frail " + self.name
+        elif montype == 2:
+            self.attack = randint(50,65)
+            self.speed = randint(40,55)
+            self.name = "Haggard " + self.name
+        elif montype == 3:
+            self.attack = randint(60,75)
+            self.speed = randint(50,70)
+            self.name = "Skilled " + self.name
+        elif montype == 4:
+            self.attack = randint(75,95)
+            self.speed = randint(55,60)
+            self.name = "Elite " + self.name
+        else:
+            self.attack = randint(80,100)
+            self.speed = randint(60,70)
+            self.name = "Ancient " + self.name
+        self.health = factorial(montype) * 5 + 100 
+        
+    def getScore(self, player):
+
+        score = 0
+        for i in self.inventory.keys():
+            if i == "Diamond":
+                score += self.inventory[i]*100
+            elif(i == "Gold"):
+                score += self.inventory[i]*80
+            elif(i == "Emerald"):
+                score += self.inventory[i]*60
+            elif(i == "Silver"):
+                score += self.inventory[i]*50
+            elif(i == "Bronze"):
+                score += self.inventory[i]*35
+            elif(i == "Copper"):
+                score += self.inventory[i]*20
+            elif(i == "Amber"):
+                score += self.inventory[i]*15
+            elif(i == "Nugget"):
+                score += self.inventory[i]*10
+
+        return score
 
 class Enemy:
     """
@@ -217,6 +272,12 @@ def battle_monsters(player, monster):
 
 enemy1 = Enemy()   
 enemy2 = Enemy()
+
 print(f"{enemy1} has {enemy1.health}, {enemy2} has {enemy2.health}")
 battle_monsters(enemy1,enemy2)
 print(f"{enemy1} has {enemy1.health}, {enemy2} has {enemy2.health}")
+
+#Battling Player 1 and Player 2
+#print(f"{player1} has {player1.health}, {player2} has {player2.health}")
+#battle_monsters(player1,player2)
+#print(f"{player1} has {player1.health}, {player2} has {player2.health}")
