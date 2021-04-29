@@ -102,7 +102,7 @@ class Player:
 
         return score
     
-    def eatFood(self):
+    def eatFood(self, player):
         eatfood = ["apple", "orange", "pizza", "yogurt", "pineapple"]
         self.hunger = eatfood[randint(0,5)]
         status = 0
@@ -113,15 +113,17 @@ class Player:
             elif self.health == 75:
                 status += self.health[i]*75
                 self.hunger = eatfood[randint(0,5)]
+                print(f"{player.name} has to eat {self.hunger} in order to revive himself!")
             elif self.health == 50:
                 status += self.health[i]*50
                 self.hunger = eatfood[randint(0,5)]
+                print(f"{player.name} has to eat {self.hunger} in order to revive himself!")
             elif self.health == 25:
                 status += self.health[i]*25
                 self.hunger = "You are almost out of energy "+ "eat this: " + eatfood[randint(0,5)]
             else:
                 self.hunger = "You died!"
-                print(f"This your health at the moment: {self.health}")
+                print(f"{player.name} this is your health at the moment: {self.health}")
         
         return status 
 
