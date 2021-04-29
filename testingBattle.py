@@ -56,27 +56,28 @@ class Player:
         self.maxhunger = hunger
         self.speed = 70
         self.starve = False
-        player_choice = ["Nelson", "Ali", "Noble", "Nicholas"]
-        player_position = ["Player 1", "Player2", "Player 3", "Player 4"]
+        player_choice = ["Player 1 -Nelson", "Player 2- Ali", "Player 3 -Noble", "Player 4-Nicholas"]
         self.name = player_choice[randint(0,4)]
-         = random.choice([])
+        
         
         if player_choice == None:
             quit()
         else:
             self.name = player_choice[randint(0,4)]
-            if player_choice == "Nelson" in player_choice.keys():
-                player_position == 0
-            elif player_choice == "Ali" in player_choice.keys():
-                player_position == 1
-            elif player_choice == "Noble" in player_choice:
-                player_position == 2
+            if self.name == "Nelson" in player_choice:
+                self.attack = randint(34,60)
+                self.speed = randint(100,50)
+            elif self.name == "Ali" in player_choice:
+                self.attack = randint(12,60)
+                self.speed = randint(25,50)
+            elif self.name == "Noble" in player_choice:
+                self.attack = randint(12,60)
+                self.speed = randint(31,50)
+            elif self.name == "Noble" in player_choice:
+                self.attack = randint(70,60)
+                self.speed = randint(45,60)
+        
 
-                
-        #if montype == 1:
-            #self.attack = randint(40,60)
-            #self.speed = randint(30,50)
-            #self.name = "Frail " + self.name
 
     def getScore(self, player):
 
@@ -100,8 +101,8 @@ class Player:
                 score += self.inventory[i]*10
 
         return score
-    def __repr__():
-        
+    
+
 
 class Enemy:
     """
@@ -136,7 +137,7 @@ class Enemy:
 
         """
         monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
-             "Skeleton", "Ghoul", "Lizardman", "Spectre"]
+             "Skeleton", "Ghoul", "Lizardman", "Spectre"] 
         self.name = monsters[randint(0,7)]
         montype = random.choice([1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
         
