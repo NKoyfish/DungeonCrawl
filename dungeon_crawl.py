@@ -49,7 +49,7 @@ class Cell:
                   a key
                     
     """
-    def __init__(self,col,row,obsID):
+    def __init__(self,col,row,obsID): 
         """
         Parameters:
                     col: (int) column number in Maze
@@ -955,6 +955,7 @@ def main(maze,hunger = 50):
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player)
+        os.system('cls')
         newMaze.printMaze(player)
         #newMaze.getBorder()
     if player.health == 0:
