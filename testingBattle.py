@@ -123,9 +123,7 @@ class Player:
                     print(f"{player.name} holds" + score + " and has a Diamond")
                 
                 
-                elif "Copper" in self.inventory:
-                    score += self.inventory[treasure]*20
-                    print(f"{player.name} holds" + score + " and has a Copper")
+                
                 elif "Amber" in self.inventory:
                     score += self.inventory[treasure]*15
                     print(f"{player.name} holds" + score + " and has a Amber")
