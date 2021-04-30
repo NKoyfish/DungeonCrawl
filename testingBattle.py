@@ -107,7 +107,10 @@ class Player:
                 self.hunger = "You died!"
                 print(f"{player.name} this is your health at the moment: {self.health} because your hunger levels are low {self.hunger}") 
         
-        return status 
+        return status
+    
+    
+
 
 
         
