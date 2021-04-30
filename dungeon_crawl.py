@@ -231,12 +231,12 @@ class Player:
                 score += self.inventory[i]*10
         score += 100 * self.battlesWon
         #score = int(score * (self.battlesWon/self.battlesFought))
-        #return score
+        #return score 
 
         if self.battlesFought != 0:
             score = int(score * (self.battlesWon/self.battlesFought))
         else:
-            score = int(score * .75)
+            score = int(score * .75) 
         return score
 
 class Enemy:
@@ -668,7 +668,7 @@ class Maze():
                         jumpable.append(jumpCheck)
             if len(jumpable) > 1:
                 while not choose:
-                    os.system('cls')
+                    os.system('clear')
                     strjump = ""
                     for direc in jumpable:
                         strjump += (direc + " ")
@@ -1038,7 +1038,7 @@ def main(maze):
                     confirmed = False
                 else:
                     print("(Y)es or (N)o confirmation")
-                os.system('cls')
+                os.system('clear')
         else:
             confirmed = True
             player_choice = ["Player 1 -Nelson", "Player 2- Ali", \
@@ -1069,17 +1069,17 @@ def main(maze):
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player,msgLog)
-        os.system('cls')
+        os.system('clear')
         newMaze.printMaze(player,msgLog)
         #newMaze.getBorder()
     if player.health <= 0:
-        os.system('cls')
+        os.system('clear')
         msgLog.addLog("Game Over!")
         msgLog.addLog("Score: "+str(player.getScore()))
         newMaze.printMaze(player,True)
 
     else: 
-        os.system('cls')
+        os.system('clear')
         msgLog.addLog("Completed Maze!")
         msgLog.addLog("Score: "+str(player.getScore()))
         msgLog.fullLog()
@@ -1108,7 +1108,7 @@ def strike(entity1,entity2,msgLog):
         critChance += int((entity1.speed - entity2.speed)/5)
     
     if randint(0,100) < critChance:
-        os.system('cls')
+        os.system('clear')
         msgLog.addLog(entity1.name +" sees a weak point in "+entity2.name)
         critDmg = 1.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
@@ -1116,14 +1116,14 @@ def strike(entity1,entity2,msgLog):
         high = int(entity1.attack*1.1)
         damage = critDmg * randint(low,high)
         entity2.health -= damage
-        os.system('cls')
+        os.system('clear')
         msgLog.addLog(entity1.name+" hits "+ entity2.name+ " for " +str(damage),combat=True)
         if isinstance(entity1,Player) and entity1.health > 0 :
             print(entity1)
         elif isinstance(entity2,Player) and entity2.health > 0:
             print(entity2)
     else: 
-        os.system('cls')
+        os.system('clear')
         msgLog.addLog(entity1.name+" misses",combat=True)
         if isinstance(entity1,Player) and entity1.health > 0 :
             print(entity1)
