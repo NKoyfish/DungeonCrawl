@@ -4,7 +4,8 @@ INST326 Project
 run by entering "python3 dungeon_crawl.py -filename maze3.txt"
 or "python dungeon_crawl.py -filename maze3.txt"
 the -filename arg is optional and a maze will be generated for the user if a file is not provided
-##Features and fixes as of 4/30/21
+
+## Features and fixes as of 4/30/21
   - obscures tiles the player hasnt visited or been in one-cell proximity to
   - Neatly clears out prints (Before it would keep appending to the terminal with new maze prints)
   - generates random monsters and treasure for the player to encounter
@@ -18,7 +19,7 @@ the -filename arg is optional and a maze will be generated for the user if a fil
   - fixed the confusion between __str__() and __repr__()
   - auto-run fights between player and enemies
 
-##TODO:
+## TODO:
   - Neatly print HP bars of the Player and Enemy during battle below the Message Log
   - useItem() / eatFood()
   - Make enemies drop items and equipment depending on their level
