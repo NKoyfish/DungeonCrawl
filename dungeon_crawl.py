@@ -102,7 +102,7 @@ class Cell:
         self.isInvisibleBorder: True if the obsID = "/"
                     
     """
-    def __init__(self,col,row,obsID):
+    def __init__(self,col,row,obsID): 
         """
         Parameters:
                     col: (int) column number in Maze
@@ -1016,9 +1016,15 @@ def main(maze):
     #diff = cells - borders
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
+<<<<<<< HEAD
         newMaze.move(player,msgLog)
         os.system('cls')
         newMaze.printMaze(player,msgLog)
+=======
+        newMaze.move(player)
+        os.system('cls')
+        newMaze.printMaze(player)
+>>>>>>> 6472d0f5c61d33c81b3145474c484b92df460d05
         #newMaze.getBorder()
     if player.health == 0:
         print("\nGame Over!")
