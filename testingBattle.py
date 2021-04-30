@@ -126,9 +126,7 @@ class Player:
                 
                 
                 
-                else:
-                    score = None
-                    print(f"{player.name} holds" + score
+                
 
         
     
