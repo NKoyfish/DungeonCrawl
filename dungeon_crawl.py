@@ -23,6 +23,57 @@ from random import randint
 import random
 from math import factorial  
 
+class MessageLog():
+    """
+    Stores a log of text for the player to read past actions
+
+        Attributes:
+                log (list): list of maximum size 3 with string objects which
+                            represent actions the player has taken
+    """
+    def __init__(self):
+        """
+        Side effects: Creates a new MessageLog Object
+        """
+        self.log = []
+    
+    def __repr__(self):
+        """
+        Allows print(MessageLogObject) to look nice
+        Side effects: Prints to stdout
+        Returns: String based off self.log
+        """
+        maxMsg = 0
+        if len(self.log) > 0:
+            for message in self.log:
+                if len(message) > maxMsg:
+                    maxMsg = len(message)
+            frame = "=" * (2+maxMsg) + "\n"
+            for message in self.log:
+                frame += message + "\n" 
+            frame += "=" * (2+maxMsg) + "\n"
+        else: frame = "======Message Log=======\n========================\n"
+        return frame
+    
+    def addLog(self,msg,combat = False):
+        """
+        Appends a new message to log. Doesn't append a repeated message unless
+        the player is in combat
+
+        Arguments:  msg (str): Message to be added to log
+                    combat (boolean): Is the player in combat?
+        Side Effects: appends to self.log and pops the first element if size >=3
+        """
+        if len(self.log) >= 3:
+            self.log.pop()
+            self.log.append(msg)
+        elif len(self.log) == 0:
+            self.log.append(msg)
+        else:
+            if combat == False and self.log[-1] != msg:
+                self.log.append(msg)
+            elif combat:
+                self.log.append(msg)
 
 class Cell:
     """
@@ -42,11 +93,13 @@ class Cell:
                     "B": Initiates a battle encounter. See Maze.battle()
                     "#": Stairs to the next floor. Pairs with another floor with
                          the same number
+                    "/": Void space cant break or travel over
         traveled: (Boolean) True if a player has traveled there or false if not
         playerthere: (Boolean) Represents if player is currently occupying Cell
         revealed: (Boolean) True if the player has traveled near the Cell
         isBorder: (Boolean) True if moving a Cell up left down or right isn't
                   a key
+        self.isInvisibleBorder: True if the obsID = "/"
                     
     """
     def __init__(self,col,row,obsID):
@@ -108,19 +161,20 @@ class Player:
                                 can be used again. Every movement the player
                                 makes reduces the cooldown (Value) by one. Rest
                                 reduces the cooldown by 5.
+            hideLog (Boolean):  Toggle for logs to print
+            hideStats (Boolean):If printMaze should show player steps
+            shortCom (Boolean): Short hand commands
     """                     
-    def __init__(self,name,health,attack,hunger):
+    def __init__(self,name,health,attack,speed,hunger):
         """
         Initializes a new Player object
 
         Parameters:
                 name (str): name of the new player
                 health (float): HP of the new player
-                maxHealth (float): maxHP of the new player
-                weapondmg (float): Attack damage of the player
+                attack (float): Attack damage of the player
+                speed (float): speed of the player
                 hunger (float): How full the player is
-                maxHunger (float): Max hunger of the player
-                starve (boolean): Is the player at 0 hunger?
         Side effects: Initializes a new Player object
         """
         self.inventory = {"map": 0, "sword": {"equip": attack, "unequip": [] },
@@ -133,9 +187,21 @@ class Player:
         self.attack = attack
         self.hunger = hunger
         self.maxhunger = hunger
-        self.speed = 70
+        self.speed = speed
         self.starve = False
-
+        self.hideStats = False
+        self.hideLog = False
+        self.shortCom = False
+    def __repr__(self):
+        baseframe = "\\" * (12+len(self.name))
+        frame = baseframe+ "\n"
+        frame +="Name  : "+ self.name + "\n"
+        frame +="Health: " + str(self.health) + "\n"
+        frame +="Attack: "+ str(self.attack) + "\n"
+        frame +="Speed : "+ str(self.speed) + "\n"
+        frame +="Hunger: "+ str(self.hunger) + "\n"
+        frame += baseframe
+        return frame
     def getScore(self):
 
         score = 0
@@ -156,7 +222,7 @@ class Player:
                 score += self.inventory[i]*15
             elif(i == "Nugget"):
                 score += self.inventory[i]*10
-
+        print(self.inventory.keys())
         return score
 
 class Enemy:
@@ -218,85 +284,6 @@ class Enemy:
             self.name = "Ancient " + self.name
         self.health = factorial(montype) * 5 + 100 
 
-def strike(entity1,entity2):
-    """TENTATIVE VERSION
-    Entity1 attacks entity2 and calcualtes remaining hp
-
-    Args:   entity1 (Player or Enemy)
-            entity2 (Player or Enemy)
-    
-    Side effect: Lowers entity2 hp if an attack lands through them
-    """
-    baseAccuracy = .7
-    critChance = 0
-    critDmg = 1
-    baseAccuracy += int((entity1.speed - entity2.speed)/4) / 100
-    if entity1.speed - entity2.speed > 0:
-        critChance = int((entity1.speed - entity2.speed)/5)
-    
-    if randint(0,100) < critChance:
-        critDmg = 2.5
-    if randint(0,100) <= baseAccuracy * 100:#accuracy roll
-        entity2.health -= critDmg * randint(entity1.attack*.9,entity1.attack*1.1)
-def battle_monsters(player, monster):
-    """
-    Args:
-        player (Player) - this will be the player attacking the monster
-        the monster.
-        monster (Enemy) - this will be monster attacking the player
-    Brief Description:
-    here we are making a conditional that will determine who has won the battle.
-    the first criteria would be if the player has no health and the monsters
-    health is greater than the plyaer the monster has won the match. otherwise
-    the monster has won. if the player and monsters health has reached a limit
-    of 0, then that means that there has been a draw and nobody has won.
-     maybe there could be a rematch.
-    """
-    battleEnd = False
-    while not battleEnd:
-        playerFaster = player.speed > monster.speed
-        if playerFaster:
-            strike(player,monster)
-            if player.health == 0 and monster.health > player.health:
-                print(f"{monster.name} has won the battle against {player.name}!")
-            elif(monster.health == 0 and player.health > monster.health):
-                print(f"{player.name} won and {monster.name} has been defeated!")
-            elif(player.health == 0 and monster.health == 0):
-                print(f"{player.name} and {monster.name} have slain each other!") 
-            strike(monster,player)
-            if player.health == 0 and monster.health > player.health:
-                print(f"{monster.name} has won the battle against \
-                    {player.name}!")
-            elif(monster.health == 0 and player.health \
-                > monster.health):
-                print(f"{player.name} won and {monster.name}\
-                     has been defeated!")
-            elif(player.health == 0 and monster.health == 0):
-                print(f"{player.name} and {monster.name}\
-                     have slain each other!")
-            strike(monster,monster)
-
-""" Nelson C- Worked on the turn method!"""
-def turn(enemy, player):
-    if enemy.health == 0 and player.health > enemy.health:
-        print(f"{player.name} wins!")
-    elif(player.health == 0 and enemy.health > player.health):
-        print(f"{enemy.name} wins!")
-    
-    else:
-        while enemy.health >0 and player.health >0:
-            enemy.attack(player)
-            player.attack(enemy)
-            print(f"{enemy.name} has {enemy.health} max health.")
-            print(f"{player.name} has {player.health} max health.") 
-            
-        if enemy.health > 0 and player.health <= 0:
-            print(f"{enemy.name} wins!")
-        elif (player.health > 0 and enemy.health <=0):
-            print(f"{player.name} wins!")
-
-
-
 class EmptyMaze():
     """
     An EmptyMaze is created when generateSimpleMaze() is called.
@@ -353,6 +340,7 @@ class EmptyMaze():
                 if name in self.tuplemaze.keys():
                     self.tuplemaze[name].revealed = True
                     print(self.tuplemaze[name],end ="")
+
 class Maze():
     """
     A Maze has a Start and an End represented by S and E respectively
@@ -389,6 +377,7 @@ class Maze():
 
         Side effects: Creates a new Maze object
         """
+        self.messageLog = []
         self.mazeStairs = {}
         self.tuplemaze = {}
         self.modulePts = [] #attachment pts for generateSimpleMaze()
@@ -449,19 +438,19 @@ class Maze():
                     self.modulePts[len(self.modulePts)-1]]
         self.revealSurround()
         self.setBorders()
-    def printMaze(self,player,bool = False):
+    def printMaze(self,player,msgLog: MessageLog(),bool = False):
         """
         prints the maze for the user to see current progress 
         and traversal options if bool is True then reveal the entire maze 
         (normally called after player death)
 
         Args: player (Player):  player participating in the maze
+              msgLog (MessageLog): prints past actions after maze
               bool (Boolean):   Reveal entire maze if True
 
         Side effects: prints to stdout
         """
-        statsShown = False
-        print(self.modulePts)
+        #print(self.modulePts)
         for r in range(self.maxRow+1):
             if r >0:
                 print()
@@ -474,11 +463,11 @@ class Maze():
                         if not bool:
                             print(self.tuplemaze[name],end ="")
                         else: print(self.tuplemaze[name].obsID,end ="")
-        if not statsShown:
-            print(f"\nHealth: {player.health}/{player.maxhealth} \t \
-            Hunger: {player.hunger}/{player.maxhunger}")
-            statsShown = True
-
+        print("\n")
+        if player.hideStats == False:
+            print(player)
+        if player.hideLog == True:
+            print(msgLog)
     def writeMaze(self,file):
         """
         Converts a Maze object back into a textfile. Used to append new rooms
@@ -504,7 +493,7 @@ class Maze():
                             f.write("\n")
                 maxrowcount +=1
             
-    def breakWall(self,player):
+    def breakWall(self,player, msglog: MessageLog()):
         """
         breakWall allows a player to destroy a non bordering wall
         that are in proximity to the player (1 Cell away).
@@ -512,6 +501,7 @@ class Maze():
         Args:   
                 direction (str) either "up", "down", "left", or "right"
                 player (Player) the player breaking the wall.
+                msglog (MessageLog): Where the action will be printed
         
         Side effects: Breaks a non bordering wall in front of the player.
         """
@@ -537,6 +527,9 @@ class Maze():
                         self.tuplemaze[dirs[choice]].obsID = " "
                         player.abilityList["break"] = 5
                         choose = True
+                        msglog.addLog(player.name +" broke wall at "+\
+                            dirs[choice])
+                        print(msglog)
             else: print("No wall to break")
         else: print("Break on cooldown for",player.abilityList["break"],"turns")
     def useTorch(self,player):
@@ -553,7 +546,7 @@ class Maze():
                         and may increase or decrease an Enemy class objects' dmg
         """
         pass #not yet implemented
-    def generateTreasure(self,player):
+    def generateTreasure(self,player,msgLog : MessageLog()):
         treasureRoll = randint(0,100)
         addItem = ""
         quantRoll = random.choice([1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,4,5,5,10])
@@ -580,16 +573,15 @@ class Maze():
         else:
             piece = "piece"
         if quantRoll > 1:
-            print(f"{player.name} has picked up {quantRoll} {addItem} {piece}s.")
+            msgLog.addLog(player.name + " picked up " + str(quantRoll) + " "+\
+                str(addItem) + " " + str(piece) +"s")
         else:
-            print(f"{player.name} has picked up one {addItem} {piece}.")
-
+            msgLog.addLog(player.name + " picked up one " + str(addItem) +\
+               " " +  str(piece))
         if addItem not in player.inventory.keys():
             player.inventory[addItem] = quantRoll
         else:
             player.inventory[addItem] += quantRoll
-        
-    
 
     def revealMap(self,player):
         """
@@ -603,7 +595,7 @@ class Maze():
             for cell in self.tuplemaze.keys():
                 self.tuplemaze[cell].revealed = True
 
-    def jumpWall(self, player):
+    def jumpWall(self, player,msgLog : MessageLog()):
         """
         this enables players who have the ability to jump over walls in the
         maze to be able to do so
@@ -626,12 +618,19 @@ class Maze():
                 if dirs[jumpCheck] in self.tuplemaze.keys():
                     if self.tuplemaze[dirs[jumpCheck]].obsID == "=" and \
                     (dirs2[jumpCheck] in self.tuplemaze.keys()) and \
-                    self.tuplemaze[dirs2[jumpCheck]] != "=":
+                    self.tuplemaze[dirs2[jumpCheck]].obsID not in ["=","/"]:
                         jumpable.append(jumpCheck)
             if len(jumpable) > 1:
                 while not choose:
-                    print(jumpable)
-                    choice = input("Which wall do you want to jump? Or 'c' to quit\n")
+                    os.system('cls')
+                    strjump = ""
+                    for direc in jumpable:
+                        strjump += (direc + " ")
+                    strjump = strjump.strip()
+                    strjump = strjump.replace(" ",', ')
+                    print("Options:",strjump)
+                    choice = input("Which wall do you want to jump? Or 'c' to"+\
+                    " cancel\n")
                     if choice == "c":
                         break
                     elif choice in jumpable:
@@ -646,14 +645,16 @@ class Maze():
                         self.tuplemaze[newPos2].revealed=True 
                         self.currentTuple = newRow, newCol
                         player.abilityList["jump"] = 5
+                        msgLog.addLog(player.name +" jumped over a wall")
                         choose = True
             else:
-                print("There is no wall to jump over")
+                msgLog.addLog("There is no wall to jump over")
         else:
             j = "jump"
-            print(f"Jump is still on cooldown for {player.abilityList[j]} turns")
+            msgLog.addLog("Jump is still on cooldown for "+\
+                str(player.abilityList[j]) +  "turns")
      
-    def move(self,player):
+    def move(self,player,msglog):
         """
         A players "turn" in a maze. Here they can decide to either move, rest,
         or perform a skill.
@@ -664,69 +665,88 @@ class Maze():
                         player health and hunger. Maze revealed via
                         revealSurround()
         """
-        resp = input("\nMove where? (u)p,(d)own,(l)eft, or (r)ight\n\
-    Other: (Rest), (B)reak Wall, (J)ump Wall, or (P)osition\n")
+        if player.shortCom:
+            ask = "\n(U),(D),(L),(R),(Rest),(B),(J),(Use),(P)" +\
+                "(stats),(short),(logs)\n"
+        else: ask = "\nMove where? (U)p,(D)own,(L)eft, or (R)ight\n" +\
+        "Other: (Rest), (B)reak Wall, (J)ump Wall, (use) item, or (P)osition" +\
+        "\nToggles: player (stats),(short) commands, or message (logs)\n"
+
+        resp = input(ask)
         moved = False
         msgWait = False
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
         row,col = tupUp
-        if resp in ["u","up"]:
+        if resp.lower() == "stats":
+            player.hideStats = not player.hideStats
+        elif resp.lower() == "logs":
+            player.hideLog = not player.hideLog
+        elif resp.lower() == "short":
+            player.shortCom = not player.shortCom
+        elif resp.lower() in ["u","up"]:
             up = str(self.currentTuple)
             tupNewUp = "("+str(row-1)+", "+str(col)+")"
             if tupNewUp in self.tuplemaze.keys() and \
-                self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row-1,col)
                 self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
-            else: print("A wall obstructs you")
-        elif resp in ["d","down"]:
+            else: msglog.addLog("A wall obstructs you")
+        elif resp.lower() in ["d","down"]:
             up = str(self.currentTuple)
             tupNewUp = "("+str(row+1)+", "+str(col)+")"
             if tupNewUp in self.tuplemaze.keys() and \
-                self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row+1,col)
                 self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
-            else: print("A wall obstructs you")
-        elif resp in ["l","left"]:
+            else: msglog.addLog("A wall obstructs you")
+        elif resp.lower() in ["l","left"]:
             up = str(self.currentTuple)
             tupNewUp = "("+str(row)+", "+str(col-1)+")"
             if tupNewUp in self.tuplemaze.keys() and\
-                self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row,col-1)
                 self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
-            else: print("A wall obstructs you")
-        elif resp in ["right","r"]:
+            else: msglog.addLog("A wall obstructs you")
+        elif resp.lower() in ["right","r"]:
             up = str(self.currentTuple)
             tupNewUp = "("+str(row)+", "+str(col+1)+")"
             if tupNewUp in self.tuplemaze.keys() and\
-                self.tuplemaze[tupNewUp].obsID != "=":
+                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
                 self.tuplemaze[up].playerthere = False
                 self.currentTuple = (row,col+1)
                 self.tuplemaze[tupNewUp].playerthere = True
                 moved = True
-            else: print("A wall obstructs you")
+            else: msglog.addLog("A wall obstructs you")
         elif resp.lower() == "j": #jumpWall
-            self.jumpWall(player)
+            self.jumpWall(player,msglog)
             moved = True
-        if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():#stair check
-            print("move from", self.currentTuple)
-            print(self.tuplemaze[str(self.currentTuple)].playerthere)
-            self.revealSurround() #Have to reveal surrounding area before
-            # moving somewhere new
-            pos1,pos2 = self.mazeStairs\
-                [self.tuplemaze[str(self.currentTuple)].obsID]
-            self.tuplemaze[str(self.currentTuple)].playerthere = False
-            if self.currentTuple == pos1:
-                self.currentTuple = pos2
-            else:
-                self.currentTuple = pos1
-            self.tuplemaze[str(self.currentTuple)].playerthere = True
-            self.tuplemaze[str(self.currentTuple)].revealed = True
+        elif resp.lower() == "b": #breakWall
+            self.breakWall(player,msglog)
+        elif resp == "p": # used primarily for debugging
+            msglog.addLog("You check your surroundings, you are at "+\
+                str(self.currentTuple))
+
+        elif resp.lower() == "rest":
+            if player.hunger > 10:
+                player.health += player.maxhealth/10
+                if player.health > player.maxhealth:
+                    player.health = player.maxhealth
+                player.hunger -= 10
+                msglog.addLog("You take a short rest")
+                for ability in player.abilityList.keys():
+                    if player.abilityList[ability] > 0:
+                        player.abilityList[ability] -= 5
+                    if player.abilityList[ability] < 0:
+                        player.abilityList[ability] = 0
+        else: 
+            print("Invalid Action")
+            msgWait = True
         if moved: #reduce hunger or health and cooldowns
             for ability in player.abilityList.keys():
                 if player.abilityList[ability] > 0:
@@ -736,31 +756,31 @@ class Maze():
             else: player.health -=1
 
             if player.health == 0: #death check
-                print(f"{player.name} has died of starvation")
-            if player.health > 0 and self.tuplemaze[str(self.currentTuple)].obsID == "T":
-                self.generateTreasure(player)
-                msgWait = True
-                self.tuplemaze[str(self.currentTuple)].obsID = " "
-        elif resp.lower() == "b": #breakWall
-            self.breakWall(player)
-        elif resp == "p": # used primarily for debugging
-            print(self.currentTuple)
+                msglog.addLog(player.name," has died of starvation")
+            if player.health > 0 and \
+                self.tuplemaze[str(self.currentTuple)].obsID == "T":
 
-        elif resp.lower() == "rest":
-            if player.hunger > 10:
-                player.health += player.maxhealth/10
-                if player.health > player.maxhealth:
-                    player.health = player.maxhealth
-                player.hunger -= 10
-                for ability in player.abilityList.keys():
-                    if player.abilityList[ability] > 0:
-                        player.abilityList[ability] -= 5
-                    if player.abilityList[ability] < 0:
-                        player.abilityList[ability] = 0
-        else: print("invalid direction or action")
-        self.revealSurround()
+                self.generateTreasure(player,msglog)
+                self.tuplemaze[str(self.currentTuple)].obsID = " "
+            #stair check
+            if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():
+                
+                msglog.addLog(player.name," took the stairs")
+                print(self.tuplemaze[str(self.currentTuple)].playerthere)
+                self.revealSurround() #Have to reveal surrounding area before
+                # moving somewhere new
+                pos1,pos2 = self.mazeStairs\
+                    [self.tuplemaze[str(self.currentTuple)].obsID]
+                self.tuplemaze[str(self.currentTuple)].playerthere = False
+                if self.currentTuple == pos1:
+                    self.currentTuple = pos2
+                else:
+                    self.currentTuple = pos1
+                self.tuplemaze[str(self.currentTuple)].playerthere = True
+                self.tuplemaze[str(self.currentTuple)].revealed = True
+            self.revealSurround() 
         if(msgWait):
-            sleep(1)
+            sleep(.3)
     def setBorders(self):
         #print([self.tuplemaze[cell].obsID for cell in self.tuplemaze.keys()])
         for cell in self.tuplemaze.keys():
@@ -776,7 +796,8 @@ class Maze():
                 "right":"("+str(row)+", "+str(col+1)+")"}
 
             for dire in dirs.keys():
-                if dirs[dire] not in self.tuplemaze.keys() or self.tuplemaze[dirs[dire]].obsID == "/":
+                if dirs[dire] not in self.tuplemaze.keys() or\
+                self.tuplemaze[dirs[dire]].obsID == "/":
                     self.tuplemaze[cellKey].isBorder = True
     def getBorder(self):
         borderList = []
@@ -805,7 +826,7 @@ class Maze():
         for key in dirs.keys():
             if dirs[key] in self.tuplemaze.keys():
                 self.tuplemaze[dirs[key]].revealed = True
-        
+
 def generateSimpleMaze():
     """
     Creates a simple maze if the user didnt provide a txt file to be read from.
@@ -929,7 +950,7 @@ def generateSimpleMaze():
     os.remove("temp.txt")
     return g.name
 
-def main(maze,hunger = 50):
+def main(maze):
     """
     Sets the stage for playing and the difficulty. Lower levels of hunger
     makes the game much harder.
@@ -945,22 +966,125 @@ def main(maze,hunger = 50):
     """
     if maze is None:
         maze = generateSimpleMaze()
-    player = Player("Nick",10,3,hunger)
+    confirmed = False
+    while not confirmed:
+        yesnoAnswer = False
+        name = input("What is your character's name? or 'skip'\n")
+        if name != "skip":
+            hp = float(input("Enter the hp for your character\n"))
+            attack  = float(input("Enter the attack"))
+            speed = float(input("Enter your speed stat"))
+            hunger = int(input("How many turns before you get hungry?"))
+            player = Player(name,hp,attack,speed,hunger)
+            while not yesnoAnswer:
+                c =input(f"Confirm ('y') or ('n') the creation of\n{player}\n")
+                if c.lower() == 'y':
+                    confirmed = True
+                    yesnoAnswer = True
+                elif c.lower() =='n':
+                    yesnoAnswer = True
+                    confirmed = False
+                else:
+                    print("(Y)es or (N)o confirmation")
+                os.system('cls')
+        else:
+            confirmed = True
+            player_choice = ["Player 1 -Nelson", "Player 2- Ali", \
+                "Player 3 -Noble", "Player 4-Nicholas"]
+            name = player_choice[randint(0,3)]
+            hp = randint(100, 200)
+            hunger = randint(40,60)
+            if "Nelson" in name:
+                attack = randint(34,60)
+                speed = randint(50,100)    
+            elif "Ali" in name:
+                attack = randint(12,60)
+                speed = randint(25,50)
+            elif "Noble" in name:
+                attack = randint(12,120)
+                speed = randint(31,150)
+            elif "Nicholas" in name:
+                attack = randint(60,80)
+                speed = randint(45,60)
+    msgLog = MessageLog()
+    player = Player(name,hp,attack,speed,hunger)
     newMaze= Maze(maze,player)
     #print(f"Max c: {newMaze.maxCol}, Max r: {newMaze.maxRow}")
-    newMaze.printMaze(player)
+    newMaze.printMaze(player,msgLog)
     #borders = set(newMaze.getBorder())
     #cells = set(newMaze.tuplemaze.keys())
     #diff = cells - borders
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
-        newMaze.move(player)
-        newMaze.printMaze(player)
+        newMaze.move(player,msgLog)
+        os.system('cls')
+        newMaze.printMaze(player,msgLog)
         #newMaze.getBorder()
     if player.health == 0:
         print("\nGame Over!")
         newMaze.printMaze(player,True)
-    else: print("\nCompleted Maze!")
+    else: 
+        print("\nCompleted Maze!")
+    print(f"Score: {player.getScore()}")
+
+def strike(entity1,entity2):
+    """TENTATIVE VERSION
+    Entity1 attacks entity2 and calcualtes remaining hp
+
+    Args:   entity1 (Player or Enemy)
+            entity2 (Player or Enemy)
+    
+    Side effect: Lowers entity2 hp if an attack lands through them
+    """
+    baseAccuracy = .7
+    critChance = 0
+    critDmg = 1
+    baseAccuracy += int((entity1.speed - entity2.speed)/4) / 100
+    if entity1.speed - entity2.speed > 0:
+        critChance = int((entity1.speed - entity2.speed)/5)
+    
+    if randint(0,100) < critChance:
+        critDmg = 2.5
+    if randint(0,100) <= baseAccuracy * 100:#accuracy roll
+        entity2.health -= critDmg * randint(entity1.attack*.9,entity1.attack*1.1)
+
+def battle_monsters(player, monster):
+    """
+    Args:
+        player (Player) - this will be the player attacking the monster
+        the monster.
+        monster (Enemy) - this will be monster attacking the player
+    Brief Description:
+    here we are making a conditional that will determine who has won the battle.
+    the first criteria would be if the player has no health and the monsters
+    health is greater than the plyaer the monster has won the match. otherwise
+    the monster has won. if the player and monsters health has reached a limit
+    of 0, then that means that there has been a draw and nobody has won.
+     maybe there could be a rematch.
+    """
+    battleEnd = False
+    while not battleEnd:
+        playerFaster = player.speed > monster.speed
+        if playerFaster:
+            strike(player,monster)
+            if player.health == 0 and monster.health > player.health:
+                print(f"{monster.name} has won the battle against {player.name}!")
+            elif(monster.health == 0 and player.health > monster.health):
+                print(f"{player.name} won and {monster.name} has been defeated!")
+            elif(player.health == 0 and monster.health == 0):
+                print(f"{player.name} and {monster.name} have slain each other!") 
+            strike(monster,player)
+            if player.health == 0 and monster.health > player.health:
+                print(f"{monster.name} has won the battle against \
+                    {player.name}!")
+            elif(monster.health == 0 and player.health \
+                > monster.health):
+                print(f"{player.name} won and {monster.name}\
+                     has been defeated!")
+            elif(player.health == 0 and monster.health == 0):
+                print(f"{player.name} and {monster.name}\
+                     have slain each other!")
+            strike(monster,monster)
 
 def parse_args(arglist):
     """ Parse command-line arguments.
