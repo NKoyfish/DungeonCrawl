@@ -154,6 +154,7 @@ class Cell:
             return "P"
 
 class Player:
+
     """
     A Player explores a Maze. While exploring the maze their hunger goes down.
     Occasionally they may find an enemy that they must battle or run from.
