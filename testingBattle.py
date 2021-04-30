@@ -57,7 +57,7 @@ class Player:
         self.speed = 70
         self.starve = False
         player_choice = ["Player 1 -Nelson", "Player 2- Ali", "Player 3 -Noble", "Player 4-Nicholas"]
-        self.name = player_choice[randint(0,4)]
+        self.name = player_choice[randint(0,4)] 
         
         
         if player_choice == None:
@@ -75,32 +75,13 @@ class Player:
                 self.speed = randint(31,50)
             elif self.name == "Noble" in player_choice:
                 self.attack = randint(70,60)
-                self.speed = randint(45,60)
+                self.speed = randint(45,60) 
         
 
+    
+                   
 
-    def getScore(self, player):
-
-        score = 0
-        for i in self.inventory.keys():
-            if i == "Diamond":
-                score += self.inventory[i]*100
-            elif(i == "Gold"):
-                score += self.inventory[i]*80
-            elif(i == "Emerald"):
-                score += self.inventory[i]*60
-            elif(i == "Silver"):
-                score += self.inventory[i]*50
-            elif(i == "Bronze"):
-                score += self.inventory[i]*35
-            elif(i == "Copper"):
-                score += self.inventory[i]*20
-            elif(i == "Amber"):
-                score += self.inventory[i]*15
-            elif(i == "Nugget"):
-                score += self.inventory[i]*10
-
-        return score
+    
     
     def eatFood(self, player):
         eatfood = ["apple", "orange", "pizza", "yogurt", "pineapple"]
@@ -112,6 +93,7 @@ class Player:
                 print("Health is good!")
             elif self.health == 75:
                 status += self.health[i]*75
+                #this probably isnt needed.
                 self.hunger = eatfood[randint(0,5)]
                 print(f"{player.name} has to eat {self.hunger} in order to revive himself!")
             elif self.health == 50:
@@ -123,7 +105,7 @@ class Player:
                 self.hunger = "You are almost out of energy "+ "eat this: " + eatfood[randint(0,5)]
             else:
                 self.hunger = "You died!"
-                print(f"{player.name} this is your health at the moment: {self.health}")
+                print(f"{player.name} this is your health at the moment: {self.health} because your hunger levels are low {self.hunger}") 
         
         return status 
 
