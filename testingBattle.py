@@ -125,9 +125,7 @@ class Player:
                 
                 
                 
-                elif "Nugget" in self.inventory:
-                    score += self.inventory[treasure]*10
-                    print(f"{player.name} holds" + score + " and has a Emerald")
+                
                 else:
                     score = None
                     print(f"{player.name} holds" + score
