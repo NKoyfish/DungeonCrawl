@@ -14,7 +14,7 @@ HOW TO RUN: python dungeon_crawl.py -filename maze3.txt
 """
 from argparse import ArgumentParser
 import sys
-import curses
+from string import Template
 from time import sleep
 import tempfile
 import os
@@ -90,7 +90,8 @@ class MessageLog():
             self.log.append(msg)
         if combat:
             print(self)
-
+    def combatLog(self):
+        pass
 class Cell:
     """
     A Cell makes up a Maze Object. The most basic Cells are walls and open
@@ -243,7 +244,11 @@ class Player:
             elif(i == "Nugget"):
                 score += self.inventory[i]*10
         score += 100 * self.battlesWon
-        score = int(score * (self.battlesWon/self.battlesFought))
+        
+        if self.battlesFought != 0:
+            score = int(score * (self.battlesWon/self.battlesFought))
+        else:
+            score = int(score * .75)
         return score
 
 class Enemy:
@@ -336,7 +341,7 @@ class Enemy:
             self.health -= 30
         else:
             self.speed -= 30
-
+        self.maxhealth = self.health
 class EmptyMaze():
     """
     An EmptyMaze is created when generateSimpleMaze() is called.
@@ -836,6 +841,9 @@ class Maze():
                 self.tuplemaze[str(self.currentTuple)].obsID = " "
                 enemyGen = Enemy()
                 msglog.addLog(player.name+" encountered a(n) " + enemyGen.name)
+                os.system('cls')
+                print(msglog)
+                sleep(1.3)
                 battle_monsters(player, enemyGen,msglog)
             self.revealSurround() 
         if(msgWait):
@@ -1083,7 +1091,12 @@ def main(maze):
         os.system('cls')
         msgLog.addLog("Game Over!")
         msgLog.addLog("Score: "+str(player.getScore()))
-        newMaze.printMaze(player,True)
+        msgLog.fullLog()
+        sleep(5)
+        os.system('cls')
+        player.hideLog = True
+        newMaze.printMaze(player,msgLog,True)
+        #newMaze.printMaze(player,True)
 
     else: 
         os.system('cls')
@@ -1092,11 +1105,46 @@ def main(maze):
         msgLog.fullLog()
     
 def showBoth(entity1,entity2):
-    battleScreen = "====================="
-    txt = "{e1n} {:>7}{e2n}"
-    txt = txt.format(e1n = entity1.name,e2n = entity2.name)
-    txt +="HP: {e1h}{:>7}{e2h}"
-    txt
+    """
+    Displays both the player and monster hp percentages neatly in color
+
+    Args:
+        entity1 (Player or Enemy): The main entity (usually a Player)
+        entity2 (Enemy): The enemy being fought by Entity1
+    Side effects: Clears screen and prints to stdout in color
+    """
+    boxSize = "#$e1n "
+    tem = Template(boxSize).substitute(e1n = entity1.name)
+    if len(tem)%2:
+        tem += " " * 10
+    else:
+        tem += " " * 9
+    if not (len(tem)%2):
+        tem += "#$e2 \n"
+    else:
+        tem += " $e2#\n"
+    tem2 = Template(tem).substitute(e2 = entity2.name)
+    if not len(tem2)%2:
+        battleScreen = "#" * (len(tem2)-1) + "\n"
+        battleScreen = (battleScreen[0:len(entity1.name)] +\
+             battleScreen[1+len(entity1.name):]) 
+        tem2 = (tem2[0:len(entity1.name)] + tem2[1+len(entity1.name):]) 
+    else:
+        battleScreen = "#" * (len(tem2)-1) + "\n"
+    halfScreen = int(len(battleScreen)/2 -2)
+    numGreen1 = int((entity1.health / entity1.maxhealth)* (halfScreen))
+    numRed1 = halfScreen - numGreen1
+    numGreen2 = int((entity2.health / entity2.maxhealth)* halfScreen)
+    numRed2 = halfScreen - numGreen2
+    if numRed1 > halfScreen: numRed1 = halfScreen + 1
+    if numRed2 > halfScreen: numRed2 = halfScreen
+    os.system('cls')
+    hpbar1 = "\033[92m" + "="*(numGreen1+1) + \
+    "\033[0m"+"\033[91m" + "="*numRed1 + "\033[0m"
+    hpbar2 = "\033[91m" + "="*numRed2 + "\033[0m"+"\033[92m" + "="*numGreen2 \
+        + "\033[0m"
+    bothbars = "#"+hpbar1 + "#" + hpbar2+ "#\n"
+    print(battleScreen+tem2+bothbars+battleScreen)
 
 def strike(entity1,entity2,msgLog):
     """TENTATIVE VERSION
@@ -1117,6 +1165,10 @@ def strike(entity1,entity2,msgLog):
     if randint(0,100) < critChance:
         os.system('cls')
         msgLog.addLog(entity1.name +" sees a weak point in "+entity2.name)
+        if isinstance(entity1,Player):
+            showBoth(entity1,entity2)
+        else:
+            showBoth(entity2,entity1)
         critDmg = 1.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
         low = int(entity1.attack*.9)
@@ -1125,19 +1177,20 @@ def strike(entity1,entity2,msgLog):
         entity2.health -= damage
         os.system('cls')
         msgLog.addLog(entity1.name+" hits "+ entity2.name+ " for " +str(damage),combat=True)
-        if isinstance(entity1,Player) and entity1.health > 0 :
-            print(entity1)
-        elif isinstance(entity2,Player) and entity2.health > 0:
-            print(entity2)
+        if isinstance(entity1,Player):
+            showBoth(entity1,entity2)
+        else:
+            showBoth(entity2,entity1)
     else: 
         os.system('cls')
         msgLog.addLog(entity1.name+" misses",combat=True)
-        if isinstance(entity1,Player) and entity1.health > 0 :
-            print(entity1)
-        elif isinstance(entity2,Player) and entity2.health > 0:
-            print(entity2)
-
-def battle_monsters(player, monster, msgLog : MessageLog()):
+        if isinstance(entity1,Player):
+            showBoth(entity1,entity2)
+        else:
+            showBoth(entity2,entity1)
+    print(msgLog)
+    
+def battle_monsters(entity1, entity2, msgLog : MessageLog()):
     """
     Args:
         player (Player) - this will be the player attacking the monster
@@ -1153,66 +1206,67 @@ def battle_monsters(player, monster, msgLog : MessageLog()):
     """
     battleEnd = False
     while not battleEnd:
-        playerFaster = player.speed >= monster.speed
-        if playerFaster:
-            if player.health <= 0 and monster.health > player.health:
-                msgLog.addLog(monster.name+" has won the battle against " + player.name,combat=True)
+        entity1Faster = entity1.speed >= entity2.speed
+        if entity1Faster:
+            if entity1.health <= 0 and entity2.health > entity1.health:
+                msgLog.addLog(entity2.name+" has won the battle against " + entity1.name,combat=True)
                 battleEnd = True
-                if isinstance(player,Player):
-                    player.battlesFought += 1
-            elif(monster.health <= 0 and player.health > monster.health):
-                msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
-                if isinstance(player,Player):
-                    player.battlesFought += 1
-                    player.battlesWon += 1
+                if isinstance(entity1,Player):
+                    entity1.battlesFought += 1
+            elif(entity2.health <= 0 and entity1.health > entity2.health):
+                msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                if isinstance(entity1,Player):
+                    entity1.battlesFought += 1
+                    entity1.battlesWon += 1
                 battleEnd = True
             if not battleEnd:
-                strike(player,monster,msgLog)
+                strike(entity1,entity2,msgLog)
                 sleep(2)
-                if player.health <= 0 and monster.health > player.health:
-                    msgLog.addLog(monster.name+" has won the battle against " + player.name,combat=True)
+                if entity1.health <= 0 and entity2.health > entity1.health:
+                    msgLog.addLog(entity2.name+" has won the battle against " + entity1.name,combat=True)
                     battleEnd = True
-                    if isinstance(player,Player):
-                        player.battlesWon += 1
-                        player.battlesFought += 1
-                elif(monster.health <= 0 and player.health > monster.health):
-                    msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
-                    if isinstance(player,Player):
-                        player.battlesWon += 1
-                        player.battlesFought += 1
+                    if isinstance(entity1,Player):
+                        entity1.battlesWon += 1
+                        entity1.battlesFought += 1
+                elif(entity2.health <= 0 and entity1.health > entity2.health):
+                    msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                    if isinstance(entity1,Player):
+                        entity1.battlesWon += 1
+                        entity1.battlesFought += 1
                     battleEnd = True
                 if not battleEnd:
-                    strike(monster,player,msgLog)
+                    strike(entity2,entity1,msgLog)
                     sleep(2)
         else:
-            if player.health <= 0 and monster.health > player.health:
-                msgLog.addLog(monster.name+" has killed " + player.name,combat=True)
-                if isinstance(player,Player):
-                    player.battlesWon += 1
-                    player.battlesFought += 1
+            if entity1.health <= 0 and entity2.health > entity1.health:
+                msgLog.addLog(entity2.name+" has killed " + entity1.name,combat=True)
+                if isinstance(entity1,Player):
+                    entity1.battlesWon += 1
+                    entity1.battlesFought += 1
                 battleEnd = True
-            elif(monster.health <= 0 and player.health \
-                > monster.health):
-                msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
-                if isinstance(player,Player):
-                    player.battlesWon += 1
-                    player.battlesFought += 1
+            elif entity2.health <= 0 and entity1.health > entity2.health:
+                msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                if isinstance(entity1,Player):
+                    entity1.battlesWon += 1
+                    entity1.battlesFought += 1
                 battleEnd = True
             if not battleEnd:
-                strike(monster,player,msgLog)
+                strike(entity2,entity1,msgLog)
                 sleep(2)
-                if player.health <= 0 and monster.health > player.health:
-                    msgLog.addLog(monster.name+" has killed"+ player.name,combat=True)
+                if entity1.health <= 0 and entity2.health > entity1.health:
+                    msgLog.addLog(entity2.name+" has killed "+ entity1.name,combat=True)
+                    if isinstance(entity1,Player):
+                        entity1.battlesFought += 1
                     battleEnd = True
-                elif(monster.health <= 0 and player.health \
-                > monster.health):
-                    msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
-                    if isinstance(player,Player):
-                        player.battlesWon += 1
-                        player.battlesFought += 1
+                elif(entity2.health <= 0 and entity1.health \
+                > entity2.health):
+                    msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                    if isinstance(entity1,Player):
+                        entity1.battlesWon += 1
+                        entity1.battlesFought += 1
                     battleEnd = True
                 if not battleEnd:
-                    strike(player,monster,msgLog)
+                    strike(entity1,entity2,msgLog)
                     sleep(2)
         print(msgLog)
 def parse_args(arglist):
