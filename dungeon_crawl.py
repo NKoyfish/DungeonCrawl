@@ -154,6 +154,7 @@ class Cell:
             return "P"
 
 class Player:
+
     """
     A Player explores a Maze. While exploring the maze their hunger goes down.
     Occasionally they may find an enemy that they must battle or run from.
@@ -167,23 +168,9 @@ class Player:
             hunger (float):     How full the player is. 0 hunger is starving.
                                 Starving players deal reduced damage and take 1
                                 damage a turn
-            battlesFought (int):How many battles the player has fought
-            battlesWon (int):   How many battles the player has won
-            treasureFound (int):How many T cells the player has passed over
-            inventory (Dict):   A dictionary of strings representing items.
-                                Values are ints representing the quantity owned
-            abilityList (Dict): A dictionary of (str) skills the player can use 
-                                and the remaining cooldown time until a skill 
-                                can be used again. Every movement the player
-                                makes reduces the cooldown (Value) by one. Rest
-                                reduces the cooldown by 5.
-            hideLog (Boolean):  Toggle for logs to print
-            hideStats (Boolean):If printMaze should show player steps
-            shortCom (Boolean): Short hand commands
-            battlesWon (int):   The number of battles the player has won
-            battlesFought (int):The number of battles the player has fought
-    """                     
-    def __init__(self,name,health,attack,speed,hunger):
+    """
+    def __init__(self,name,health,weapondmg,hunger):
+
         """
         Initializes a new Player object
 

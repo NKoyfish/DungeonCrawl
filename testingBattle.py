@@ -141,6 +141,47 @@ class Player:
                     score = None
                     print(f"{player.name} holds" + score
 
+        
+    
+
+
+
+    def getScore(self, player):
+
+        treasure = ["Diamond", "Gold", "Silver", "Bronze", "Copper", "Amber", "Nugget"]
+        score = 0
+        if treasure not in self.inventory:
+            return False
+        else:
+            if treasure in self.inventory:
+                if "Diamond" in self.inventory:
+                    score += self.inventory[treasure]*100
+                    print(f"{player.name} holds" + score + " and has a Diamond")
+                elif "Gold" in self.inventory:
+                    score += self.inventory[treasure]*80
+                    print(f"{player.name} holds" + score + " and has a Gold")
+                elif "Emerald" in self.inventory:
+                    score += self.inventory[treasure]*60
+                    print(f"{player.name} holds" + score + " and has a Emerald")
+                elif "Silver" in self.inventory:
+                    score += self.inventory[treasure]*65
+                    print(f"{player.name} holds" + score + " and has a Silver")
+                elif "Bronze" in self.inventory:
+                    score += self.inventory[treasure]*35
+                    print(f"{player.name} holds" + score + " and has a Bronze")
+                elif "Copper" in self.inventory:
+                    score += self.inventory[treasure]*20
+                    print(f"{player.name} holds" + score + " and has a Copper")
+                elif "Amber" in self.inventory:
+                    score += self.inventory[treasure]*15
+                    print(f"{player.name} holds" + score + " and has a Amber")
+                elif "Nugget" in self.inventory:
+                    score += self.inventory[treasure]*10
+                    print(f"{player.name} holds" + score + " and has a Emerald")
+                else:
+                    score = None
+                    print(f"{player.name} holds" + score
+
 
         
 
