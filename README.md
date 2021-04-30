@@ -1,8 +1,10 @@
 # DungeonCrawl
 INST326 Project
 ## How to run
-run by entering "python3 dungeon_crawl.py -filename maze3.txt"
-or "python dungeon_crawl.py -filename maze3.txt"
+run by entering 
+### "python3 dungeon_crawl.py -filename maze3.txt"
+or 
+### "python dungeon_crawl.py -filename maze3.txt"
 the -filename arg is optional and a maze will be generated for the user if a file is not provided
 
 ## Features and fixes as of 4/30/21
