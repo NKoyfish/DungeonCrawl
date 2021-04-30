@@ -109,7 +109,8 @@ class Player:
         
         return status 
     
-    """This is an idea update for the score!"""
+    """Ali - this is an idea update for the score. You can use this if you so choose to
+        or the other implmentation worked on"""
     def getScore(self, player, filename):
 
         treasure = ["Diamond", "Gold", "Silver", "Bronze", "Copper", "Amber", "Nugget"]
