@@ -36,23 +36,40 @@ class MessageLog():
         Side effects: Creates a new MessageLog Object
         """
         self.log = []
-    
-    def __repr__(self):
+    def fullLog(self):
         """
-        Allows print(MessageLogObject) to look nice
+        Prints the whole adventure log
+
+        Side effects: prints to stdout
+        """
+        maxMsg = 0
+        for message in self.log:
+            if len(message) > maxMsg:
+                maxMsg = len(message)
+        frame = "/" * (2+maxMsg) + "\n"
+        for message in self.log:
+            frame += message + "\n" 
+        frame += "/" * (2+maxMsg) + "\n"
+        print(frame)
+    def __str__(self):
+        """
+        Prints the last 3 player actions
         Side effects: Prints to stdout
         Returns: String based off self.log
         """
         maxMsg = 0
         if len(self.log) > 0:
+            length = len(self.log)
+            if length > 3:
+                length = 3
             for message in self.log:
                 if len(message) > maxMsg:
                     maxMsg = len(message)
-            frame = "=" * (2+maxMsg) + "\n"
-            for message in self.log:
+            frame = "/" * (2+maxMsg) + "\n"
+            for message in self.log[-length:]:
                 frame += message + "\n" 
-            frame += "=" * (2+maxMsg) + "\n"
-        else: frame = "======Message Log=======\n========================\n"
+            frame += "/" * (2+maxMsg) + "\n"
+        else: frame = "//////Message Log///////\n\n\n//////////////////////\n"
         return frame
     
     def addLog(self,msg,combat = False):
@@ -64,16 +81,15 @@ class MessageLog():
                     combat (boolean): Is the player in combat?
         Side Effects: appends to self.log and pops the first element if size >=3
         """
-        if len(self.log) >= 3:
-            self.log.pop()
-            self.log.append(msg)
-        elif len(self.log) == 0:
-            self.log.append(msg)
-        else:
+        if len(self.log) > 1:
             if combat == False and self.log[-1] != msg:
                 self.log.append(msg)
             elif combat:
                 self.log.append(msg)
+        else:
+            self.log.append(msg)
+        if combat:
+            print(self)
 
 class Cell:
     """
@@ -120,7 +136,7 @@ class Cell:
         self.isBorder = False
         self.isInvisibleBorder = False
 
-    def __repr__(self):
+    def __str__(self):
         """
         Allows Prints that reference a Cell object to print Cell.obsID
         Returns: Prints Cell.obsID, "?" if the Cell hasn't been revealed or "P" 
@@ -164,6 +180,8 @@ class Player:
             hideLog (Boolean):  Toggle for logs to print
             hideStats (Boolean):If printMaze should show player steps
             shortCom (Boolean): Short hand commands
+            battlesWon (int):   The number of battles the player has won
+            battlesFought (int):The number of battles the player has fought
     """                     
     def __init__(self,name,health,attack,speed,hunger):
         """
@@ -192,7 +210,9 @@ class Player:
         self.hideStats = False
         self.hideLog = False
         self.shortCom = False
-    def __repr__(self):
+        self.battlesWon = 0
+        self.battlesFought = 0
+    def __str__(self):
         baseframe = "\\" * (12+len(self.name))
         frame = baseframe+ "\n"
         frame +="Name  : "+ self.name + "\n"
@@ -222,7 +242,8 @@ class Player:
                 score += self.inventory[i]*15
             elif(i == "Nugget"):
                 score += self.inventory[i]*10
-        print(self.inventory.keys())
+        score += 100 * self.battlesWon
+        score = int(score * (self.battlesWon/self.battlesFought))
         return score
 
 class Enemy:
@@ -239,9 +260,11 @@ class Enemy:
     type (str) - type of monster being battled
     health (int) - this will be the monsters health
     speed (int) - this will be the ability of the monsters speed
-    attack (float) - this will be the monsters attack damage. 
+    attack (float) - this will be the monsters attack damage.
     """
-    def __init__(self):
+    def __str__(self):
+        return self.name
+    def __init__(self,diff = 1):
         """
         Explaination: 
             created a list called monsters which will hold all of the monsters 
@@ -258,9 +281,9 @@ class Enemy:
 
         """
         monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
-             "Skeleton", "Ghoul", "Lizardman", "Spectre"]
+            "Skeleton", "Ghoul", "Lizardman", "Spectre"]
         self.name = monsters[randint(0,7)]
-        montype = random.choice([1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5]) 
+        montype = random.choice([1,1,1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
         
         if montype == 1:
             self.attack = randint(40,60)
@@ -282,7 +305,37 @@ class Enemy:
             self.attack = randint(80,100)
             self.speed = randint(60,70)
             self.name = "Ancient " + self.name
-        self.health = factorial(montype) * 5 + 100 
+        self.health = factorial(montype) * 5 + 100
+        #balance
+        self.attack /= 2 
+        if "Zombie" in self.name:
+            self.health *= .9
+            self.attack += 3
+            self.speed -= 30
+        elif "Kobold" in self.name:
+            self.health *= .7
+            self.speed += 5
+            self.attack += 7
+        elif "Skeleton" in self.name:
+            self.health *= .6
+            self.attack -= 3
+            self.speed += 12
+        elif "Orc" in self.name:
+            self.health *= .4
+            self.attack -= 7
+            self.speed += 5
+        elif "Goblin" in self.name:
+            self.health *= 1.1
+            self.attack += 5
+        elif  "Lizard" in self.name:
+            self.speed += 8
+            self.attack *= 1.10
+        elif "Spectre" in self.name:
+            self.speed += 20
+            self.attack *= 1.8
+            self.health -= 30
+        else:
+            self.speed -= 30
 
 class EmptyMaze():
     """
@@ -463,7 +516,7 @@ class Maze():
                         if not bool:
                             print(self.tuplemaze[name],end ="")
                         else: print(self.tuplemaze[name].obsID,end ="")
-        print("\n")
+        print()
         if player.hideStats == False:
             print(player)
         if player.hideLog == True:
@@ -745,7 +798,7 @@ class Maze():
                     if player.abilityList[ability] < 0:
                         player.abilityList[ability] = 0
         else: 
-            print("Invalid Action")
+            msglog.addLog("Invalid Action")
             msgWait = True
         if moved: #reduce hunger or health and cooldowns
             for ability in player.abilityList.keys():
@@ -764,8 +817,7 @@ class Maze():
                 self.tuplemaze[str(self.currentTuple)].obsID = " "
             #stair check
             if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():
-                
-                msglog.addLog(player.name," took the stairs")
+                msglog.addLog(player.name+" took the stairs")
                 print(self.tuplemaze[str(self.currentTuple)].playerthere)
                 self.revealSurround() #Have to reveal surrounding area before
                 # moving somewhere new
@@ -778,6 +830,13 @@ class Maze():
                     self.currentTuple = pos1
                 self.tuplemaze[str(self.currentTuple)].playerthere = True
                 self.tuplemaze[str(self.currentTuple)].revealed = True
+            #battle check
+            if player.health > 0 and \
+                self.tuplemaze[str(self.currentTuple)].obsID == "B":
+                self.tuplemaze[str(self.currentTuple)].obsID = " "
+                enemyGen = Enemy()
+                msglog.addLog(player.name+" encountered a(n) " + enemyGen.name)
+                battle_monsters(player, enemyGen,msglog)
             self.revealSurround() 
         if(msgWait):
             sleep(.3)
@@ -1016,24 +1075,30 @@ def main(maze):
     #diff = cells - borders
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
-<<<<<<< HEAD
         newMaze.move(player,msgLog)
         os.system('cls')
         newMaze.printMaze(player,msgLog)
-=======
-        newMaze.move(player)
-        os.system('cls')
-        newMaze.printMaze(player)
->>>>>>> 6472d0f5c61d33c81b3145474c484b92df460d05
         #newMaze.getBorder()
-    if player.health == 0:
-        print("\nGame Over!")
+    if player.health <= 0:
+        os.system('cls')
+        msgLog.addLog("Game Over!")
+        msgLog.addLog("Score: "+str(player.getScore()))
         newMaze.printMaze(player,True)
-    else: 
-        print("\nCompleted Maze!")
-    print(f"Score: {player.getScore()}")
 
-def strike(entity1,entity2):
+    else: 
+        os.system('cls')
+        msgLog.addLog("Completed Maze!")
+        msgLog.addLog("Score: "+str(player.getScore()))
+        msgLog.fullLog()
+    
+def showBoth(entity1,entity2):
+    battleScreen = "====================="
+    txt = "{e1n} {:>7}{e2n}"
+    txt = txt.format(e1n = entity1.name,e2n = entity2.name)
+    txt +="HP: {e1h}{:>7}{e2h}"
+    txt
+
+def strike(entity1,entity2,msgLog):
     """TENTATIVE VERSION
     Entity1 attacks entity2 and calcualtes remaining hp
 
@@ -1043,18 +1108,36 @@ def strike(entity1,entity2):
     Side effect: Lowers entity2 hp if an attack lands through them
     """
     baseAccuracy = .7
-    critChance = 0
+    critChance = 3
     critDmg = 1
     baseAccuracy += int((entity1.speed - entity2.speed)/4) / 100
     if entity1.speed - entity2.speed > 0:
-        critChance = int((entity1.speed - entity2.speed)/5)
+        critChance += int((entity1.speed - entity2.speed)/5)
     
     if randint(0,100) < critChance:
-        critDmg = 2.5
+        os.system('cls')
+        msgLog.addLog(entity1.name +" sees a weak point in "+entity2.name)
+        critDmg = 1.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
-        entity2.health -= critDmg * randint(entity1.attack*.9,entity1.attack*1.1)
+        low = int(entity1.attack*.9)
+        high = int(entity1.attack*1.1)
+        damage = critDmg * randint(low,high)
+        entity2.health -= damage
+        os.system('cls')
+        msgLog.addLog(entity1.name+" hits "+ entity2.name+ " for " +str(damage),combat=True)
+        if isinstance(entity1,Player) and entity1.health > 0 :
+            print(entity1)
+        elif isinstance(entity2,Player) and entity2.health > 0:
+            print(entity2)
+    else: 
+        os.system('cls')
+        msgLog.addLog(entity1.name+" misses",combat=True)
+        if isinstance(entity1,Player) and entity1.health > 0 :
+            print(entity1)
+        elif isinstance(entity2,Player) and entity2.health > 0:
+            print(entity2)
 
-def battle_monsters(player, monster):
+def battle_monsters(player, monster, msgLog : MessageLog()):
     """
     Args:
         player (Player) - this will be the player attacking the monster
@@ -1070,28 +1153,68 @@ def battle_monsters(player, monster):
     """
     battleEnd = False
     while not battleEnd:
-        playerFaster = player.speed > monster.speed
+        playerFaster = player.speed >= monster.speed
         if playerFaster:
-            strike(player,monster)
-            if player.health == 0 and monster.health > player.health:
-                print(f"{monster.name} has won the battle against {player.name}!")
-            elif(monster.health == 0 and player.health > monster.health):
-                print(f"{player.name} won and {monster.name} has been defeated!")
-            elif(player.health == 0 and monster.health == 0):
-                print(f"{player.name} and {monster.name} have slain each other!") 
-            strike(monster,player)
-            if player.health == 0 and monster.health > player.health:
-                print(f"{monster.name} has won the battle against \
-                    {player.name}!")
-            elif(monster.health == 0 and player.health \
+            if player.health <= 0 and monster.health > player.health:
+                msgLog.addLog(monster.name+" has won the battle against " + player.name,combat=True)
+                battleEnd = True
+                if isinstance(player,Player):
+                    player.battlesFought += 1
+            elif(monster.health <= 0 and player.health > monster.health):
+                msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
+                if isinstance(player,Player):
+                    player.battlesFought += 1
+                    player.battlesWon += 1
+                battleEnd = True
+            if not battleEnd:
+                strike(player,monster,msgLog)
+                sleep(2)
+                if player.health <= 0 and monster.health > player.health:
+                    msgLog.addLog(monster.name+" has won the battle against " + player.name,combat=True)
+                    battleEnd = True
+                    if isinstance(player,Player):
+                        player.battlesWon += 1
+                        player.battlesFought += 1
+                elif(monster.health <= 0 and player.health > monster.health):
+                    msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
+                    if isinstance(player,Player):
+                        player.battlesWon += 1
+                        player.battlesFought += 1
+                    battleEnd = True
+                if not battleEnd:
+                    strike(monster,player,msgLog)
+                    sleep(2)
+        else:
+            if player.health <= 0 and monster.health > player.health:
+                msgLog.addLog(monster.name+" has killed " + player.name,combat=True)
+                if isinstance(player,Player):
+                    player.battlesWon += 1
+                    player.battlesFought += 1
+                battleEnd = True
+            elif(monster.health <= 0 and player.health \
                 > monster.health):
-                print(f"{player.name} won and {monster.name}\
-                     has been defeated!")
-            elif(player.health == 0 and monster.health == 0):
-                print(f"{player.name} and {monster.name}\
-                     have slain each other!")
-            strike(monster,monster)
-
+                msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
+                if isinstance(player,Player):
+                    player.battlesWon += 1
+                    player.battlesFought += 1
+                battleEnd = True
+            if not battleEnd:
+                strike(monster,player,msgLog)
+                sleep(2)
+                if player.health <= 0 and monster.health > player.health:
+                    msgLog.addLog(monster.name+" has killed"+ player.name,combat=True)
+                    battleEnd = True
+                elif(monster.health <= 0 and player.health \
+                > monster.health):
+                    msgLog.addLog(player.name+" has won the battle against " + monster.name,combat=True)
+                    if isinstance(player,Player):
+                        player.battlesWon += 1
+                        player.battlesFought += 1
+                    battleEnd = True
+                if not battleEnd:
+                    strike(player,monster,msgLog)
+                    sleep(2)
+        print(msgLog)
 def parse_args(arglist):
     """ Parse command-line arguments.
     
