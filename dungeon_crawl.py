@@ -243,7 +243,13 @@ class Player:
             elif(i == "Nugget"):
                 score += self.inventory[i]*10
         score += 100 * self.battlesWon
-        score = int(score * (self.battlesWon/self.battlesFought))
+        #score = int(score * (self.battlesWon/self.battlesFought))
+        #return score
+
+        if self.battlesFought != 0:
+            score = int(score * (self.battlesWon/self.battlesFought))
+        else:
+            score = int(score * .75)
         return score
 
 class Enemy:
