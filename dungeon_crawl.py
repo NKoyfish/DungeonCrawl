@@ -175,7 +175,7 @@ class Player:
             abilityList (Dict): A dictionary of (str) skills the player can use 
                                 and the remaining cooldown time until a skill 
                                 can be used again. Every movement the player
-                                makes reduces the cooldown (Value) by one. Rest
+                                makes reduces the cooldown (Value) by one. Rest 
                                 reduces the cooldown by 5.
             hideLog (Boolean):  Toggle for logs to print
             hideStats (Boolean):If printMaze should show player steps
