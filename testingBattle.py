@@ -57,7 +57,7 @@ class Player:
         self.speed = 70
         self.starve = False
         player_choice = ["Player 1 -Nelson", "Player 2- Ali", "Player 3 -Noble", "Player 4-Nicholas"]
-        self.name = player_choice[randint(0,4)]
+        self.name = player_choice[randint(0,4)] 
         
         
         if player_choice == None:
@@ -75,32 +75,13 @@ class Player:
                 self.speed = randint(31,50)
             elif self.name == "Noble" in player_choice:
                 self.attack = randint(70,60)
-                self.speed = randint(45,60)
+                self.speed = randint(45,60) 
         
 
+    
+                   
 
-    def getScore(self, player):
-
-        score = 0
-        for i in self.inventory.keys():
-            if i == "Diamond":
-                score += self.inventory[i]*100
-            elif(i == "Gold"):
-                score += self.inventory[i]*80
-            elif(i == "Emerald"):
-                score += self.inventory[i]*60
-            elif(i == "Silver"):
-                score += self.inventory[i]*50
-            elif(i == "Bronze"):
-                score += self.inventory[i]*35
-            elif(i == "Copper"):
-                score += self.inventory[i]*20
-            elif(i == "Amber"):
-                score += self.inventory[i]*15
-            elif(i == "Nugget"):
-                score += self.inventory[i]*10
-
-        return score
+    
     
     def eatFood(self, player):
         eatfood = ["apple", "orange", "pizza", "yogurt", "pineapple"]
@@ -112,6 +93,7 @@ class Player:
                 print("Health is good!")
             elif self.health == 75:
                 status += self.health[i]*75
+                #this probably isnt needed.
                 self.hunger = eatfood[randint(0,5)]
                 print(f"{player.name} has to eat {self.hunger} in order to revive himself!")
             elif self.health == 50:
@@ -123,9 +105,103 @@ class Player:
                 self.hunger = "You are almost out of energy "+ "eat this: " + eatfood[randint(0,5)]
             else:
                 self.hunger = "You died!"
-                print(f"{player.name} this is your health at the moment: {self.health}")
+                print(f"{player.name} this is your health at the moment: {self.health} because your hunger levels are low {self.hunger}") 
         
         return status 
+    
+    """Ali - this is an idea update for the score. You can use this if you so choose to
+        or the other implmentation worked on"""
+    def getScore(self, player, filename):
+
+        treasure = ["Diamond", "Gold", "Silver", "Bronze", "Copper", "Amber", "Nugget"]
+        score = 0
+        self.inventory = treasure[randint(0,8)] 
+        with open (filename, "r", encoding = "utf-8") as file:
+            for i in file.readlines():
+                line = i.strip()
+                line2 = i.split("\n")
+                line3 = line2[0]
+                line4 = line2[1]
+                treasure_choice = generateTreasure(self.name, MessageLog())
+                if treasure not in self.inventory:
+                    return False
+                else:
+                    if "Diamond" in self.inventory:
+                        score += self.inventory[treasure]*100
+                        print(f"{player.name} holds" + score + " and has a Diamond")
+                    elif "Gold" in self.inventory:
+                        score += self.inventory[treasure]*80
+                        print(f"{player.name} holds" + score + " and has a Gold")
+                    elif "Emerald" in self.inventory:
+                        score += self.inventory[treasure]*60
+                        print(f"{player.name} holds" + score + " and has a Emerald")
+                    elif "Silver" in self.inventory:
+                        score += self.inventory[treasure]*65
+                        print(f"{player.name} holds" + score + " and has a Silver")
+                    elif "Bronze" in self.inventory:
+                        score += self.inventory[treasure]*35
+                        print(f"{player.name} holds" + score + " and has a Bronze")
+                    elif "Copper" in self.inventory:
+                        score += self.inventory[treasure]*20
+                        print(f"{player.name} holds" + score + " and has a Copper")
+                    elif "Amber" in self.inventory:
+                        score += self.inventory[treasure]*15
+                        print(f"{player.name} holds" + score + " and has a Amber")
+                    elif "Nugget" in self.inventory:
+                        score += self.inventory[treasure]*10
+                        print(f"{player.name} holds" + score + " and has a Emerald")
+                    else:
+                        score = None
+                        print(f"{player.name} holds" + score
+
+
+
+                
+                
+                
+                
+                
+
+        
+    
+
+
+
+    def getScore(self, player):
+
+        treasure = ["Diamond", "Gold", "Silver", "Bronze", "Copper", "Amber", "Nugget"]
+        score = 0
+        if treasure not in self.inventory:
+            return False
+        else:
+            if treasure in self.inventory:
+                if "Diamond" in self.inventory:
+                    score += self.inventory[treasure]*100
+                    print(f"{player.name} holds" + score + " and has a Diamond")
+                elif "Gold" in self.inventory:
+                    score += self.inventory[treasure]*80
+                    print(f"{player.name} holds" + score + " and has a Gold")
+                elif "Emerald" in self.inventory:
+                    score += self.inventory[treasure]*60
+                    print(f"{player.name} holds" + score + " and has a Emerald")
+                elif "Silver" in self.inventory:
+                    score += self.inventory[treasure]*65
+                    print(f"{player.name} holds" + score + " and has a Silver")
+                elif "Bronze" in self.inventory:
+                    score += self.inventory[treasure]*35
+                    print(f"{player.name} holds" + score + " and has a Bronze")
+                elif "Copper" in self.inventory:
+                    score += self.inventory[treasure]*20
+                    print(f"{player.name} holds" + score + " and has a Copper")
+                elif "Amber" in self.inventory:
+                    score += self.inventory[treasure]*15
+                    print(f"{player.name} holds" + score + " and has a Amber")
+                elif "Nugget" in self.inventory:
+                    score += self.inventory[treasure]*10
+                    print(f"{player.name} holds" + score + " and has a Emerald")
+                else:
+                    score = None
+                    print(f"{player.name} holds" + score
 
 
         
