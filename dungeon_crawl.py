@@ -51,10 +51,10 @@ class MessageLog():
         for message in self.log:
             if len(message) > maxMsg:
                 maxMsg = len(message)
-        frame = "/" * (2+maxMsg) + "\n"
+        frame = "#" * (2+maxMsg) + "\n"
         for message in self.log:
-            frame += message + "\n" 
-        frame += "/" * (2+maxMsg) + "\n"
+            frame += "#" +message + "#\n" 
+        frame += "#" * (2+maxMsg) + "\n"
         print(frame)
     def __str__(self):
         """
@@ -70,11 +70,11 @@ class MessageLog():
             for message in self.log:
                 if len(message) > maxMsg:
                     maxMsg = len(message)
-            frame = "/" * (2+maxMsg) + "\n"
+            frame = "#" * (2+maxMsg) + "\n"
             for message in self.log[-length:]:
-                frame += message + "\n" 
-            frame += "/" * (2+maxMsg) + "\n"
-        else: frame = "//////Message Log///////\n\n\n//////////////////////\n"
+                frame += "#" +message + " " * (maxMsg - len(message)) +"#\n" 
+            frame += "#" * (2+maxMsg) + "\n"
+        else: frame = "######Message Log#######\n\n\n########################\n"
         return frame
     
     def addLog(self,msg,combat = False):
@@ -217,22 +217,38 @@ class Player:
         self.speed = speed
         self.starve = False
         self.hideStats = False
-        self.hideLog = False
+        self.hideLog = True
         self.shortCom = False
         self.torchLeft = 0
         self.battlesWon = 0
         self.battlesFought = 0
     
     def __str__(self):
-        baseframe = "\\" * (12+len(self.name))
-        frame = baseframe+ "\n"
-        frame +="Name  : "+ self.name + "\n"
-        frame +="Health: " + str(self.health) + "\n"
-        frame +="Attack: "+ str(self.attack) + "\n"
-        frame +="Speed : "+ str(self.speed) + "\n"
-        frame +="Hunger: "+ str(self.hunger) + "\n"
-        frame += baseframe
-        return frame
+        tup =  (("#","S"),
+                ("#Name  :", self.name),
+                ("#Health:",str(self.health)+"/"+str(self.maxhealth)),
+                ("#Attack:", str(self.attack)),
+                ("#Speed :", str(self.speed)),
+                ("#Hunger:", str(self.hunger)+"/"+str(self.maxhunger)),
+                ("#","E"))
+        maxFrame = 0
+        for x,y in tup:
+            if len(x) + len(y) > maxFrame: maxFrame = len(x) + len(y)
+        maxFrame += 5
+        printFrame =""
+        for x,y in tup:
+            if x == "#":
+                row = "#" * maxFrame
+                if y == "S":
+                    row = "\n" + row + "\n"
+                elif y == "E":
+                    row = row + "\n"
+                printFrame += row
+            else:
+                rightrow = str(y)
+                row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+"#\n"
+                printFrame += row 
+        return (printFrame.strip())
     
     def getScore(self):
 
@@ -560,7 +576,7 @@ class Maze():
         print()
         if player.hideStats == False:
             print(player)
-        if player.hideLog == True:
+        if player.hideLog == False:
             print(msgLog)
     def writeMaze(self,file):
         """
@@ -1114,6 +1130,7 @@ def main(maze):
                     prints to stdout and makes a new maze
                     lowers player hunger as turns progress
                     reveals maze tiles as player progresses
+    Raises: ValueError if stat inputs are 0 or negative
     """
     if maze is None:
         maze = generateSimpleMaze()
@@ -1126,6 +1143,9 @@ def main(maze):
             attack  = float(input("Enter the attack"))
             speed = float(input("Enter your speed stat"))
             hunger = int(input("How many turns before you get hungry?"))
+            if not((hp * attack * speed) > 0 and (hp > 0, attack > 0/
+                speed > 0 and hunger >= 0)):
+                raise ValueError("Enter positive stat values")
             player = Player(name,hp,attack,speed,hunger)
             while not yesnoAnswer:
                 c =input(f"Confirm ('y') or ('n') the creation of\n{player}\n")
@@ -1175,11 +1195,13 @@ def main(maze):
         os.system('clear')
         msgLog.addLog("Game Over!")
         msgLog.addLog("Score: "+str(player.getScore()))
-        msgLog.fullLog()
-        sleep(5)
+        print(msgLog)
+        sleep(3)
         os.system('cls')
         player.hideLog = True
         newMaze.printMaze(player,msgLog,True)
+        sleep(3)
+        msgLog.fullLog()
         #newMaze.printMaze(player,True)
 
     else: 
@@ -1190,10 +1212,7 @@ def main(maze):
     
 def showBoth(entity1,entity2):
     """
-    
     Displays both the player and monster hp percentages neatly in color
-
-    __authors__ =   'Nelson Contreras' and 'Nicholas Koy'
 
     Args:
         entity1 (Player or Enemy): The main entity (usually a Player)
@@ -1201,25 +1220,28 @@ def showBoth(entity1,entity2):
     Side effects: Clears screen and prints to stdout in color
     """
     boxSize = "#$e1n"
+    temp = ""
     tem = Template(boxSize).substitute(e1n = entity1.name)
+    if not len(entity2.name)%2:
+        temp = entity2.name
+        entity2.name = " "+temp
+    else: temp = entity2.name
     if len(tem)%2:
-        tem += " " * 10
+        tem += " " * 11
     else:
-        tem += " " * 9
-    if not (len(tem)%2):
-        tem += "#$e2 \n"
+        tem += " " * 10
+    if  (len(tem)%2):
+        tem += "  $e2#\n"
     else:
         tem += " $e2#\n"
     tem2 = Template(tem).substitute(e2 = entity2.name)
-    if not len(tem2)%2:
-        battleScreen = "#" * (len(tem2)-1) + "\n"
-        battleScreenTemp = (battleScreen[0:len(entity1.name)] +\
-             battleScreen[1+len(entity1.name):]+"") 
-        tem2 = (tem2[0:len(entity1.name)+1] + tem2[2+len(entity1.name):]) 
-        battleScreen = battleScreenTemp
+    if len(tem2)%2:
+        battleScreen = "#" * (len(tem2)) + "\n"
+        battleScreen = (battleScreen[0:len(entity1.name)] +\
+             battleScreen[1+len(entity1.name):]) 
+        tem2 = (tem2[0:len(entity1.name)] + tem2[1+len(entity1.name):]) 
     else:
         battleScreen = "#" * (len(tem2)-1) + "\n"
-    
     halfScreen = int(len(battleScreen)/2 -2)
     numGreen1 = int((entity1.health / entity1.maxhealth)* (halfScreen))
     numRed1 = halfScreen - numGreen1
@@ -1228,11 +1250,12 @@ def showBoth(entity1,entity2):
     if numRed1 > halfScreen: numRed1 = halfScreen + 1
     if numRed2 > halfScreen: numRed2 = halfScreen
     os.system('cls')
-    hpbar1 = "\033[92m" + "="*(numGreen1+1) + \
+    hpbar1 = "\033[92m" + "="*(numGreen1) + \
     "\033[0m"+"\033[91m" + "="*numRed1 + "\033[0m"
     hpbar2 = "\033[91m" + "="*numRed2 + "\033[0m"+"\033[92m" + "="*numGreen2 \
         + "\033[0m"
     bothbars = "#"+hpbar1 + "#" + hpbar2+ "#\n"
+    entity2.name =temp 
     print(battleScreen+tem2+bothbars+battleScreen)
 
 def strike(entity1,entity2,msgLog):
@@ -1392,4 +1415,4 @@ def parse_args(arglist):
 
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
-    main(args.filename)    
+    main(args.filename)
