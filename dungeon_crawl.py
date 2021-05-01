@@ -11,6 +11,9 @@ enough. Players have an inventory of tools that may aid them in their journey.
 
 HOW TO RUN: python dungeon_crawl.py -filename maze3.txt
             or python dungeon_crawl.py
+
+__authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
+                'Noble Nwokoma'
 """
 from argparse import ArgumentParser
 import sys
@@ -30,9 +33,11 @@ class MessageLog():
         Attributes:
                 log (list): list of maximum size 3 with string objects which
                             represent actions the player has taken
+        __author__ = 'Nicholas Koy': class + methods
     """
     def __init__(self):
         """
+        Makes a new MessageLog object
         Side effects: Creates a new MessageLog Object
         """
         self.log = []
@@ -96,7 +101,7 @@ class Cell:
     """
     A Cell makes up a Maze Object. The most basic Cells are walls and open
     spaces.
-
+    __author__ = 'Nicholas Koy' : class
     Attributes:
         col: (int) What column the Cell is located (index starts at 0)
         row: (int) What row the Cell is located in (index starts at 0)
@@ -155,11 +160,12 @@ class Cell:
             return "P"
 
 class Player:
-
     """
     A Player explores a Maze. While exploring the maze their hunger goes down.
     Occasionally they may find an enemy that they must battle or run from.
     Players have skills they can use to traverse the maze easier.
+
+    __author__ = 'Nelson Contreras': Class, init
 
     Attributes:
             name (str):         Represents the player
@@ -184,6 +190,7 @@ class Player:
             shortCom (Boolean): Short hand commands
             battlesWon (int):   The number of battles the player has won
             battlesFought (int):The number of battles the player has fought
+            torchLeft (int):    How many steps they can see farther
     """                     
     def __init__(self,name,health,attack,speed,hunger):
         """
@@ -198,8 +205,8 @@ class Player:
         Side effects: Initializes a new Player object
         """
         self.inventory = {"map": 0, "sword": {"equip": attack, "unequip": [] },
-        "armor" : {"equip": ("tunic", 0, 0, 5), "unequip": []}, "small core": 0, "medium core":0
-        , "large core": 0}
+        "armor" : {"equip": ("tunic", 0, 0, 5), "unequip": []}, 
+        "small core": 0, "medium core":0, "large core": 0, "torch": 1}
         self.abilityList = {"break": 0, "jump": 0}
         self.name = name
         self.health = health
@@ -212,8 +219,10 @@ class Player:
         self.hideStats = False
         self.hideLog = False
         self.shortCom = False
+        self.torchLeft = 0
         self.battlesWon = 0
         self.battlesFought = 0
+    
     def __str__(self):
         baseframe = "\\" * (12+len(self.name))
         frame = baseframe+ "\n"
@@ -224,6 +233,7 @@ class Player:
         frame +="Hunger: "+ str(self.hunger) + "\n"
         frame += baseframe
         return frame
+    
     def getScore(self):
 
         score = 0
@@ -245,18 +255,38 @@ class Player:
             elif(i == "Nugget"):
                 score += self.inventory[i]*10
         score += 100 * self.battlesWon
-        #score = int(score * (self.battlesWon/self.battlesFought))
-        #return score 
-
         if self.battlesFought != 0:
             score = int(score * (self.battlesWon/self.battlesFought))
         else:
             score = int(score * .75) 
         return score
 
+    def useItem(self,item,msgLog):
+        """
+        Players can use certain items to aid them in their travels
+
+        Args: item (str): the item to be searched in inv and used
+
+        Side effects: Uses the item. Different items have different effects
+                      May lower quantity
+        """
+        validItems = ["torch","bandage"]
+        if item in validItems:
+            if item in self.inventory.keys() and self.inventory[item] > 0:
+                self.inventory[item] -= 1
+                if item == "torch":
+                    self.torchLeft = randint(6,10)
+                elif item == "bandage":
+                    self.health += int(self.maxhealth * .25)
+                    if self.health > self.maxhealth:
+                        self.health = self.maxhealth
+            else:
+                msgLog.addLog("You have no more to use")
+        else:
+            msgLog.addLog("Item doesn't exist")
 class Enemy:
     """
-    Nelson
+    __author__ = 'Nelson Contreras' : __init__() and __str__()
     Brief Description: So there has been built an Enemy class that stores 3 
     methods that we will be using such as the __init__ method that will
     initialize the monsters_name, monsters_type, monsters_health, 
@@ -351,6 +381,7 @@ class EmptyMaze():
     EmptyMaze starts off as an n by m sized rectangle designated by the user
     and procedurally generates start, end, treasure, and battle obstacles.
 
+    __author__ = 'Nicholas Koy' : Class + methods
     Attributes:
         maxCol: (int) max number of columns in maze where index starts at 0.
         maxRow: (int) max number of rows in maze where index starts at 0.
@@ -409,6 +440,8 @@ class Maze():
     and get treasure represented by B and T respectively. Reveals tiles
     the player has been near and may contain stairs that teleport the player.
 
+    __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
+                    'Noble Nwokoma'
     Attributes:
     tuplemaze (Dict):   a Dictionary of string keys
                         representing a string casted tuple of row,col.
@@ -432,7 +465,7 @@ class Maze():
     def __init__(self,mazefile,player):
         """
         Initializes a new Maze object
-
+        __author__ = 'Nicholas Koy'
         Args:    mazefile (str):    path to the maze to be read from
                  player (Player):   Player currently running through the dungeon
 
@@ -504,7 +537,7 @@ class Maze():
         prints the maze for the user to see current progress 
         and traversal options if bool is True then reveal the entire maze 
         (normally called after player death)
-
+        __author__ = 'Nicholas Koy'
         Args: player (Player):  player participating in the maze
               msgLog (MessageLog): prints past actions after maze
               bool (Boolean):   Reveal entire maze if True
@@ -531,8 +564,9 @@ class Maze():
             print(msgLog)
     def writeMaze(self,file):
         """
-        Converts a Maze object back into a textfile. Used to append new rooms
 
+        Converts a Maze object back into a textfile. Used to append new rooms
+        __author__ = 'Nicholas Koy'
         Parameters:
                 file: (str) name to the file to be created temporarily
 
@@ -559,12 +593,15 @@ class Maze():
         breakWall allows a player to destroy a non bordering wall
         that are in proximity to the player (1 Cell away).
 
+        __author__ = 'Nicholas Koy'
+
         Args:   
                 direction (str) either "up", "down", "left", or "right"
                 player (Player) the player breaking the wall.
                 msglog (MessageLog): Where the action will be printed
         
-        Side effects: Breaks a non bordering wall in front of the player.
+        Side effects:   Breaks a non bordering wall in front of the player.
+                        Prints to standard out via msglog
         """
         row,col = self.currentTuple
         choose = False
@@ -593,21 +630,20 @@ class Maze():
                         print(msglog)
             else: print("No wall to break")
         else: print("Break on cooldown for",player.abilityList["break"],"turns")
-    def useTorch(self,player):
-        """
-        Torches are used by the player to reveal an extra tile of area around 
-        the player. Torches can aid the player by increasing their accuracy on 
-        monsters and can scare / debuff certain monsters. Torches will last a
-        set amount ofsteps and will be tracked by a player attribute
-
-        Args: player (Player): the player in the current dungeon run
-
-        Side effects:   Removes a torch from the player's inventory, changes how
-                        revealSurround() works, increases player accuracy
-                        and may increase or decrease an Enemy class objects' dmg
-        """
-        pass #not yet implemented
     def generateTreasure(self,player,msgLog : MessageLog()):
+        """
+        Generates treasure for the player to add to their inventory
+        Treasure adds to their score and each treasure has a different score val
+
+        __author__ = 'Ali Iqbal', 'Nelson Contreras', and 'Nicholas Koy'
+
+        Args:
+                player (Player)    : player picking up treasure
+                msgLog (MessageLog): Event logger
+        
+        Side effects:   adds key or changes key values in player.inventory
+                        prints to stdout via msglog
+        """
         treasureRoll = randint(0,100)
         addItem = ""
         quantRoll = random.choice([1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,4,5,5,10])
@@ -647,9 +683,9 @@ class Maze():
     def revealMap(self,player):
         """
         This reveals the game map if it is in the players inventory
+        __author__ = 'Noble Nwokoma'
         Args:
-            player(Player): The p;ayer in the game
-            search through the players inventory to find the map.
+            player(Player): The player in the game
         Side effects: Makes the map entire layout visible and reveals treasure
         """
         if player.inventory["map"] == 1:
@@ -660,6 +696,8 @@ class Maze():
         """
         this enables players who have the ability to jump over walls in the
         maze to be able to do so
+
+        __author__ = 'Noble Nwokoma'
         Args:
             player(String): The name of the player in the game
             it will evaluate the player and see if they have the ability to do
@@ -720,6 +758,9 @@ class Maze():
         A players "turn" in a maze. Here they can decide to either move, rest,
         or perform a skill.
 
+        __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
+                        'Noble Nwokoma'
+
         Args:
                 player: (Player) the player about to perform an action.
         Side effects:   Prints to stdout and changes attributes such as
@@ -735,6 +776,7 @@ class Maze():
 
         resp = input(ask)
         moved = False
+        torchOn = False
         msgWait = False
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
         row,col = tupUp
@@ -744,6 +786,9 @@ class Maze():
             player.hideLog = not player.hideLog
         elif resp.lower() == "short":
             player.shortCom = not player.shortCom
+        elif resp.lower() == "use":
+            item = input("What item are you using?\n")
+            player.useItem(item,msglog)
         elif resp.lower() in ["u","up"]:
             up = str(self.currentTuple)
             tupNewUp = "("+str(row-1)+", "+str(col)+")"
@@ -815,7 +860,11 @@ class Maze():
             if player.hunger > 0:
                 player.hunger -= 1
             else: player.health -=1
-
+            if player.torchLeft > 0:
+                torchOn = True
+                player.torchLeft -= 1
+            else:
+                torchOn = False
             if player.health == 0: #death check
                 msglog.addLog(player.name," has died of starvation")
             if player.health > 0 and \
@@ -827,8 +876,8 @@ class Maze():
             if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():
                 msglog.addLog(player.name+" took the stairs")
                 print(self.tuplemaze[str(self.currentTuple)].playerthere)
-                self.revealSurround() #Have to reveal surrounding area before
-                # moving somewhere new
+                self.revealSurround(torchOn) 
+                #Have to reveal surrounding area before moving somewhere new
                 pos1,pos2 = self.mazeStairs\
                     [self.tuplemaze[str(self.currentTuple)].obsID]
                 self.tuplemaze[str(self.currentTuple)].playerthere = False
@@ -848,10 +897,17 @@ class Maze():
                 print(msglog)
                 sleep(1.3)
                 battle_monsters(player, enemyGen,msglog)
-            self.revealSurround() 
+            self.revealSurround(torchOn) 
         if(msgWait):
             sleep(.3)
     def setBorders(self):
+        """
+        Sets border attribute for cells in proximity to the edge / void
+
+        __authors__ =  'Nicholas Koy'
+
+        Side effect: Sets isBorder attr of certain Cells in tuplemaze dict
+        """
         #print([self.tuplemaze[cell].obsID for cell in self.tuplemaze.keys()])
         for cell in self.tuplemaze.keys():
             cellKey = cell
@@ -870,16 +926,24 @@ class Maze():
                 self.tuplemaze[dirs[dire]].obsID == "/":
                     self.tuplemaze[cellKey].isBorder = True
     def getBorder(self):
+        """
+        __authors__ = 'Nicholas Koy'
+        Gets a list of all cells that are borders
+
+        Returns: list of strings of cell keys from tuplemaze
+        """
         borderList = []
         for cell in self.tuplemaze.keys():
             if self.tuplemaze[cell].isBorder:
                 borderList.append(cell)
         return borderList
 
-    def revealSurround(self):
+    def revealSurround(self,torch = False):
         """
         Reveals the surrounding maze area (one cell away from the player 
         and two if the player has a torch)
+
+        __authors__ =   'Ali Iqbal', and 'Nicholas Koy'
 
         Side effect: changes self.revealed to True if player in proximity.
         """
@@ -892,16 +956,28 @@ class Maze():
                 "downl":"("+str(row+1)+", "+str(col-1)+")",\
                 "upR":"("+str(row-1)+", "+str(col+1)+")",\
                 "downR":"("+str(row+1)+", "+str(col+1)+")"}
+        torchDirs = { 
+            "up":"("+str(row-2)+", "+str(col)+")",\
+            "down":"("+str(row+2)+", "+str(col)+")",
+            "left":"("+str(row)+", "+str(col-2)+")", \
+            "right":"("+str(row)+", "+str(col+2)+")"
+            }   
         #currently only reveals one tile, 2 to be added soon        
         for key in dirs.keys():
             if dirs[key] in self.tuplemaze.keys():
                 self.tuplemaze[dirs[key]].revealed = True
+        if torch:
+            for key in torchDirs.keys():
+                if torchDirs[key] in self.tuplemaze.keys():
+                    self.tuplemaze[torchDirs[key]].revealed = True
 
 def generateSimpleMaze():
     """
     Creates a simple maze if the user didnt provide a txt file to be read from.
 
-    Side effect: Creates a new maze and prints to stdout. Creates a txt file of
+    __authors__ = 'Nicholas Koy'
+
+    Side effects: Creates a new maze and prints to stdout. Creates a txt file of
                  the maze that writes to the local path named temp.txt before
                  getting deleted but used for a new file named generated.txt
                  that completes the maze creation
@@ -1022,6 +1098,11 @@ def generateSimpleMaze():
 
 def main(maze):
     """
+    __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
+                    'Noble Nwokoma' : 
+                        Everyone contributed ideas of branch ordering
+                        Nelson: Generation of 'premade' players
+
     Sets the stage for playing and the difficulty. Lower levels of hunger
     makes the game much harder.
 
@@ -1109,14 +1190,17 @@ def main(maze):
     
 def showBoth(entity1,entity2):
     """
+    
     Displays both the player and monster hp percentages neatly in color
+
+    __authors__ =   'Nelson Contreras' and 'Nicholas Koy'
 
     Args:
         entity1 (Player or Enemy): The main entity (usually a Player)
         entity2 (Enemy): The enemy being fought by Entity1
     Side effects: Clears screen and prints to stdout in color
     """
-    boxSize = "#$e1n "
+    boxSize = "#$e1n"
     tem = Template(boxSize).substitute(e1n = entity1.name)
     if len(tem)%2:
         tem += " " * 10
@@ -1129,11 +1213,13 @@ def showBoth(entity1,entity2):
     tem2 = Template(tem).substitute(e2 = entity2.name)
     if not len(tem2)%2:
         battleScreen = "#" * (len(tem2)-1) + "\n"
-        battleScreen = (battleScreen[0:len(entity1.name)] +\
-             battleScreen[1+len(entity1.name):]) 
-        tem2 = (tem2[0:len(entity1.name)] + tem2[1+len(entity1.name):]) 
+        battleScreenTemp = (battleScreen[0:len(entity1.name)] +\
+             battleScreen[1+len(entity1.name):]+"") 
+        tem2 = (tem2[0:len(entity1.name)+1] + tem2[2+len(entity1.name):]) 
+        battleScreen = battleScreenTemp
     else:
         battleScreen = "#" * (len(tem2)-1) + "\n"
+    
     halfScreen = int(len(battleScreen)/2 -2)
     numGreen1 = int((entity1.health / entity1.maxhealth)* (halfScreen))
     numRed1 = halfScreen - numGreen1
@@ -1152,11 +1238,15 @@ def showBoth(entity1,entity2):
 def strike(entity1,entity2,msgLog):
     """TENTATIVE VERSION
     Entity1 attacks entity2 and calcualtes remaining hp
+    Accuracy and crit chance determined by speed
+
+    __authors__ =  'Nelson Contreras' and 'Nicholas Koy'
 
     Args:   entity1 (Player or Enemy)
             entity2 (Player or Enemy)
     
-    Side effect: Lowers entity2 hp if an attack lands through them
+    Side effect: Lowers entity2 hp if an attack lands through them. Prints to
+                 stdout via msgLog
     """
     baseAccuracy = .7
     critChance = 3
@@ -1195,29 +1285,35 @@ def strike(entity1,entity2,msgLog):
     
 def battle_monsters(entity1, entity2, msgLog : MessageLog()):
     """
-    Args:
-        player (Player) - this will be the player attacking the monster
-        the monster.
-        monster (Enemy) - this will be monster attacking the player
     Brief Description:
     here we are making a conditional that will determine who has won the battle.
     the first criteria would be if the player has no health and the monsters
     health is greater than the plyaer the monster has won the match. otherwise
     the monster has won. if the player and monsters health has reached a limit
     of 0, then that means that there has been a draw and nobody has won.
-     maybe there could be a rematch.
+    maybe there could be a rematch.
+
+    Args:
+        player (Player) - this will be the player attacking the monster
+        the monster.
+        monster (Enemy) - this will be monster attacking the player
+    
+    __authors__ =  'Nelson Contreras', 'Nicholas Koy'
+    
     """
     battleEnd = False
     while not battleEnd:
         entity1Faster = entity1.speed >= entity2.speed
         if entity1Faster:
             if entity1.health <= 0 and entity2.health > entity1.health:
-                msgLog.addLog(entity2.name+" has won the battle against " + entity1.name,combat=True)
+                msgLog.addLog(entity2.name+" has won the battle against " +\
+                     entity1.name,combat=True)
                 battleEnd = True
                 if isinstance(entity1,Player):
                     entity1.battlesFought += 1
             elif(entity2.health <= 0 and entity1.health > entity2.health):
-                msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                msgLog.addLog(entity1.name+" has won the battle against " +\
+                     entity2.name,combat=True)
                 if isinstance(entity1,Player):
                     entity1.battlesFought += 1
                     entity1.battlesWon += 1
@@ -1226,13 +1322,15 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                 strike(entity1,entity2,msgLog)
                 sleep(2)
                 if entity1.health <= 0 and entity2.health > entity1.health:
-                    msgLog.addLog(entity2.name+" has won the battle against " + entity1.name,combat=True)
+                    msgLog.addLog(entity2.name+" has won the battle against " +\
+                         entity1.name,combat=True)
                     battleEnd = True
                     if isinstance(entity1,Player):
                         entity1.battlesWon += 1
                         entity1.battlesFought += 1
                 elif(entity2.health <= 0 and entity1.health > entity2.health):
-                    msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                    msgLog.addLog(entity1.name+" has won the battle against " +\
+                         entity2.name,combat=True)
                     if isinstance(entity1,Player):
                         entity1.battlesWon += 1
                         entity1.battlesFought += 1
@@ -1242,13 +1340,15 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                     sleep(2)
         else:
             if entity1.health <= 0 and entity2.health > entity1.health:
-                msgLog.addLog(entity2.name+" has killed " + entity1.name,combat=True)
+                msgLog.addLog(entity2.name+" has killed " + \
+                    entity1.name,combat=True)
                 if isinstance(entity1,Player):
                     entity1.battlesWon += 1
                     entity1.battlesFought += 1
                 battleEnd = True
             elif entity2.health <= 0 and entity1.health > entity2.health:
-                msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                msgLog.addLog(entity1.name+" has won the battle against " +\
+                     entity2.name,combat=True)
                 if isinstance(entity1,Player):
                     entity1.battlesWon += 1
                     entity1.battlesFought += 1
@@ -1257,13 +1357,14 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                 strike(entity2,entity1,msgLog)
                 sleep(2)
                 if entity1.health <= 0 and entity2.health > entity1.health:
-                    msgLog.addLog(entity2.name+" has killed "+ entity1.name,combat=True)
+                    msgLog.addLog(entity2.name+" has killed "+ entity1.name,\
+                        combat=True)
                     if isinstance(entity1,Player):
                         entity1.battlesFought += 1
                     battleEnd = True
-                elif(entity2.health <= 0 and entity1.health \
-                > entity2.health):
-                    msgLog.addLog(entity1.name+" has won the battle against " + entity2.name,combat=True)
+                elif(entity2.health <= 0 and entity1.health > entity2.health):
+                    msgLog.addLog(entity1.name+" has won the battle against " +\
+                        entity2.name,combat=True)
                     if isinstance(entity1,Player):
                         entity1.battlesWon += 1
                         entity1.battlesFought += 1
