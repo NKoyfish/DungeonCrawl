@@ -43,25 +43,12 @@ class MessageLog():
         self.log = []
     def fullLog(self):
         """
-        Prints the whole adventure log
-
+        Prints the whole adventure log. Identical to __str__() but the whole log
+        instead of 3 entries shown
         Side effects: prints to stdout
         """
-        maxMsg = 0
-        for message in self.log:
-            if len(message) > maxMsg:
-                maxMsg = len(message)
-        frame = "#" * (2+maxMsg) + "\n"
-        for message in self.log:
-            frame += "#" +message + "#\n" 
-        frame += "#" * (2+maxMsg) + "\n"
-        print(frame)
-    def __str__(self):
-        """
-        Prints the last 3 player actions
-        Side effects: Prints to stdout
-        Returns: String based off self.log
-        """
+        rightPadding = 3
+        leftPadding = 1
         maxMsg = 0
         if len(self.log) > 0:
             length = len(self.log)
@@ -69,34 +56,55 @@ class MessageLog():
                 length = 3
             for message in self.log:
                 if len(message) > maxMsg:
-                    maxMsg = len(message)
-            frame = "#" * (2+maxMsg) + "\n"
+                    maxMsg = len(message) + leftPadding + rightPadding
+            frame = "=" * (rightPadding+maxMsg) + "\n"
+            for message in self.log:
+                frame += "#" + (leftPadding * " ") +message + " " * \
+                (maxMsg - len(message)) +"#\n" 
+            frame += "=" * (3+maxMsg) + "\n"
+        else: frame = "====== Message Log ======\n\n\n=========================\n"
+        print(frame)
+    def __str__(self):
+        """
+        Prints the last 3 player actions
+        Side effects: Prints to stdout
+        Returns: String based off self.log
+        """
+        rightPadding = 3
+        leftPadding = 1
+        maxMsg = 0
+        if len(self.log) > 0:
+            length = len(self.log)
+            if length > 3:
+                length = 3
             for message in self.log[-length:]:
-                frame += "#" +message + " " * (maxMsg - len(message)) +"#\n" 
-            frame += "#" * (2+maxMsg) + "\n"
-        else: frame = "######Message Log#######\n\n\n########################\n"
+                if len(message) > maxMsg:
+                    maxMsg = len(message) + leftPadding + rightPadding
+            frame = "=" * (rightPadding+maxMsg) + "\n"
+            for message in self.log[-length:]:
+                frame += "#" + (leftPadding * " ") +message + " " * (maxMsg - len(message)) +"#\n" 
+            frame += "=" * (3+maxMsg) + "\n"
+        else: frame = "====== Message Log ======\n\n\n=========================\n"
         return frame
     
-    def addLog(self,msg,combat = False):
+    def addLog(self,msg,repeat = False):
         """
         Appends a new message to log. Doesn't append a repeated message unless
         the player is in combat
 
         Arguments:  msg (str): Message to be added to log
-                    combat (boolean): Is the player in combat?
-        Side Effects: appends to self.log and pops the first element if size >=3
+                    repeat (boolean): msg important enough to be repeated?
+        Side Effects: appends to self.log 
         """
         if len(self.log) > 1:
-            if combat == False and self.log[-1] != msg:
+            if repeat == False and self.log[-1] != msg:
                 self.log.append(msg)
-            elif combat:
+            elif repeat:
                 self.log.append(msg)
         else:
             self.log.append(msg)
-        if combat:
+        if repeat:
             print(self)
-    def combatLog(self):
-        pass
 class Cell:
     """
     A Cell makes up a Maze Object. The most basic Cells are walls and open
@@ -225,11 +233,11 @@ class Player:
     
     def __str__(self):
         tup =  (("#","S"),
-                ("#Name  :", self.name),
-                ("#Health:",str(self.health)+"/"+str(self.maxhealth)),
-                ("#Attack:", str(self.attack)),
-                ("#Speed :", str(self.speed)),
-                ("#Hunger:", str(self.hunger)+"/"+str(self.maxhunger)),
+                ("# Name  :", self.name),
+                ("# Health:",str(self.health)+"/"+str(self.maxhealth)),
+                ("# Attack:", str(self.attack)),
+                ("# Speed :", str(self.speed)),
+                ("# Hunger:", str(self.hunger)+"/"+str(self.maxhunger)),
                 ("#","E"))
         maxFrame = 0
         for x,y in tup:
@@ -238,17 +246,17 @@ class Player:
         printFrame =""
         for x,y in tup:
             if x == "#":
-                row = "#" * maxFrame
+                row = "=" * (maxFrame+2)
                 if y == "S":
-                    row = "\n" + row + "\n"
+                    row = row + "\n"
                 elif y == "E":
                     row = row + "\n"
                 printFrame += row
             else:
                 rightrow = str(y)
-                row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+"#\n"
+                row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+" #\n"
                 printFrame += row 
-        return (printFrame.strip())
+        return (printFrame)
     
     def getScore(self):
 
@@ -337,21 +345,21 @@ class Enemy:
         monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
             "Skeleton", "Ghoul", "Lizardman", "Spectre"]
         self.name = monsters[randint(0,7)]
-        montype = random.choice([1,1,1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
+        self.montype = random.choice([1,1,1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
         
-        if montype == 1:
+        if self.montype == 1:
             self.attack = randint(40,60)
             self.speed = randint(30,50)
             self.name = "Frail " + self.name
-        elif montype == 2:
+        elif self.montype == 2:
             self.attack = randint(50,65)
             self.speed = randint(40,55)
             self.name = "Haggard " + self.name
-        elif montype == 3:
+        elif self.montype == 3:
             self.attack = randint(60,75)
             self.speed = randint(50,70)
             self.name = "Skilled " + self.name
-        elif montype == 4:
+        elif self.montype == 4:
             self.attack = randint(75,95)
             self.speed = randint(55,60)
             self.name = "Elite " + self.name
@@ -359,7 +367,7 @@ class Enemy:
             self.attack = randint(80,100)
             self.speed = randint(60,70)
             self.name = "Ancient " + self.name
-        self.health = factorial(montype) * 5 + 100
+        self.health = factorial(self.montype) * 5 + 100
         #balance
         self.attack /= 2 
         if "Zombie" in self.name:
@@ -433,7 +441,7 @@ class EmptyMaze():
                 self.maxCol = col -1
                 self.maxRow = row
 
-    def printMaze(self):
+    def printEmptyMaze(self):
         """
         prints the EmptyMaze
         only really used for debugging dungeon generation
@@ -448,6 +456,8 @@ class EmptyMaze():
                 if name in self.tuplemaze.keys():
                     self.tuplemaze[name].revealed = True
                     print(self.tuplemaze[name],end ="")
+
+
 
 class Maze():
     """
@@ -548,11 +558,14 @@ class Maze():
                     self.modulePts[len(self.modulePts)-1]]
         self.revealSurround()
         self.setBorders()
+    
     def printMaze(self,player,msgLog: MessageLog(),bool = False):
         """
         prints the maze for the user to see current progress 
         and traversal options if bool is True then reveal the entire maze 
         (normally called after player death)
+
+        Will print out the menus before the maze if the player has them toggled
         __author__ = 'Nicholas Koy'
         Args: player (Player):  player participating in the maze
               msgLog (MessageLog): prints past actions after maze
@@ -561,6 +574,10 @@ class Maze():
         Side effects: prints to stdout
         """
         #print(self.modulePts)
+        if player.hideStats == False:
+            print(player)
+        if player.hideLog == False:
+            print(msgLog)
         for r in range(self.maxRow+1):
             if r >0:
                 print()
@@ -574,13 +591,10 @@ class Maze():
                             print(self.tuplemaze[name],end ="")
                         else: print(self.tuplemaze[name].obsID,end ="")
         print()
-        if player.hideStats == False:
-            print(player)
-        if player.hideLog == False:
-            print(msgLog)
+        
+    
     def writeMaze(self,file):
         """
-
         Converts a Maze object back into a textfile. Used to append new rooms
         __author__ = 'Nicholas Koy'
         Parameters:
@@ -646,6 +660,7 @@ class Maze():
                         print(msglog)
             else: print("No wall to break")
         else: print("Break on cooldown for",player.abilityList["break"],"turns")
+    
     def generateTreasure(self,player,msgLog : MessageLog()):
         """
         Generates treasure for the player to add to their inventory
@@ -737,7 +752,7 @@ class Maze():
                         jumpable.append(jumpCheck)
             if len(jumpable) > 1:
                 while not choose:
-                    os.system('clear')
+                    os.system('cls')
                     strjump = ""
                     for direc in jumpable:
                         strjump += (direc + " ")
@@ -860,7 +875,7 @@ class Maze():
                 if player.health > player.maxhealth:
                     player.health = player.maxhealth
                 player.hunger -= 10
-                msglog.addLog("You take a short rest")
+                msglog.addLog("You take a short rest",True)
                 for ability in player.abilityList.keys():
                     if player.abilityList[ability] > 0:
                         player.abilityList[ability] -= 5
@@ -987,6 +1002,47 @@ class Maze():
                 if torchDirs[key] in self.tuplemaze.keys():
                     self.tuplemaze[torchDirs[key]].revealed = True
 
+def generateLoot(enemy,player):
+    lootRoll = 0
+    for x in range(5):
+        rollFive += randint(0,20)
+    lootRoll += enemy.montype
+    
+    if lootRoll >= 76 and lootRoll <= 105:
+        rarity = "Unique"
+    elif lootRoll >= 70 and lootRoll < 76:
+        rarity = "Legendary"
+    elif lootRoll >= 65 and lootRoll < 70:
+        rarity = "Ultra Rare"
+    elif lootRoll >= 60 and lootRoll < 65:
+        rarity = "Rare"
+    elif lootRoll >= 57 and lootRoll < 60:
+        rarity = "Uncommon"
+    elif lootRoll >= 35 and lootRoll < 57:
+        rarity = "Common"
+    else:
+        rarity = "Rusted"
+    
+def generateWeaponEnchant(rarity,item):
+    firePrefix = {"Eruption":50,"Volcanic":70,"Flaming":30,"Hot":20,"Candle Lighting":5,"Bright":10}
+    lightPrefix = {"Tempest":60,"Thunderus":45,"Electric":25,"Shocking":20,"Sparking":5}
+    coldPrefix = {"Frigid":60,"Glacial":50,"Wintry":25,"Freezing":40,"Frosted":20,"Cool":5}
+    lesserprefixModList = {"Igni","Volt","Cryo","Toxi"}
+    titleModList = {"Cursed","Holy","Lordly","Demonic","Knightly"}
+    suffixModList = {"ta","tis","crix","tex"}
+    uniqueModList = {"of Slaying","of Unholy Purging", "of Vigor", "of Strength",
+                    "of Feasting", "of Protection"}
+    if rarity == "Unique":
+        print()
+
+class Item():
+    def __init__(self,itemType,rarity,attackVal = None,defenses = None):
+        if itemType not in ["Gloves","Boots","Armor","Sword","Ring","Amulet",\
+            "Helmet"]: raise ValueError(f"Not a valid item type: {itemType}")
+        if itemType == "Sword":
+
+
+
 def generateSimpleMaze():
     """
     Creates a simple maze if the user didnt provide a txt file to be read from.
@@ -1039,10 +1095,12 @@ def generateSimpleMaze():
             random.randint(1,newMaze.maxCol-1))
         if "("+ str(srow) + "," + str(scol) + ")" \
         != "("+ str(erow) + "," + str(ecol) + ")":
+            #Unique start end points now
             startloc = "("+ str(srow)+", "+ str(scol)+")"
             endloc = "("+ str(erow)+", "+ str(ecol)+")"
             newMaze.tuplemaze[startloc].obsID="S"
             newMaze.tuplemaze[endloc].obsID="E"
+            #start and end str casted tuples reserved
             occupied.append(startloc)
             occupied.append(endloc)
             illegalcol.append(ecol)
@@ -1053,6 +1111,8 @@ def generateSimpleMaze():
     ancC = False
     #Both get set to True once an appropriate col and row are found
     while anchorrow in illegalrow and anchorcol in illegalcol:
+        #anchorRow col gets a cell in the inner part of the maze to create a
+        #single wall from either up or down
         if not ancR:
             anchorrow = random.randint(2,newMaze.maxRow-2)  
         if not ancC:
@@ -1071,15 +1131,16 @@ def generateSimpleMaze():
             if roll < .8:
                 strTup = "(" + str(r) +", " + str(anchorcol) + ")"
                 if strTup in newMaze.tuplemaze.keys():
-                    newMaze.tuplemaze[strTup].obsID = "="
+                    if newMaze.tuplemaze[strTup].obsID not in ["S","E"]:
+                        newMaze.tuplemaze[strTup].obsID = "="
+                    #just in case check so we dont override same with below
             r+=1
-    else:
+    else: #horizontal wall
         while c < newMaze.maxCol+1:
             roll = random.uniform(0, 1)
             if roll < .8:
                 strTup = "(" + str(anchorrow) +", " + str(c) + ")"
-                if strTup in newMaze.tuplemaze.keys() and \
-                    newMaze.tuplemaze[strTup].obsID not in ["S","E"]:
+                if strTup in newMaze.tuplemaze.keys() and newMaze.tuplemaze[strTup].obsID not in ["S","E"]:
                     newMaze.tuplemaze[strTup].obsID = "="
             c+=1
 
@@ -1096,10 +1157,14 @@ def generateSimpleMaze():
             treasureloc = "("+ str(random.randint(1,newMaze.maxRow-1))+", "\
                 + str(random.randint(1,newMaze.maxCol-1))+")"
         if battleloc not in occupied:
-            newMaze.tuplemaze[battleloc].obsID ="B"
+            #Safety in case B is overriding S or E
+            if newMaze.tuplemaze[battleloc].obsID not in ["S","E"]:
+                newMaze.tuplemaze[battleloc].obsID = "B"
             occupied.append(battleloc)
         if treasureloc not in occupied:
-            newMaze.tuplemaze[treasureloc].obsID ="T"
+            #Safety in case T is overriding S or E
+            if newMaze.tuplemaze[treasureloc].obsID not in ["S","E"]:
+                newMaze.tuplemaze[treasureloc].obsID = "T"
             occupied.append(treasureloc)
     with open("generated.txt","w") as g:
         for cell in newMaze.tuplemaze.keys():
@@ -1135,6 +1200,7 @@ def main(maze):
     if maze is None:
         maze = generateSimpleMaze()
     confirmed = False
+    os.system('cls')
     while not confirmed:
         yesnoAnswer = False
         name = input("What is your character's name? or 'skip'\n")
@@ -1157,24 +1223,24 @@ def main(maze):
                     confirmed = False
                 else:
                     print("(Y)es or (N)o confirmation")
-                os.system('clear')
+                os.system('cls')
         else:
             confirmed = True
-            player_choice = ["Player 1 -Nelson", "Player 2- Ali", \
-                "Player 3 -Noble", "Player 4-Nicholas"]
+            player_choice = ["Belson", "Bli", \
+                "Boble", "Bibholas"]
             name = player_choice[randint(0,3)]
             hp = randint(100, 200)
             hunger = randint(40,60)
-            if "Nelson" in name:
+            if "Belson" in name:
                 attack = randint(34,60)
                 speed = randint(50,100)    
-            elif "Ali" in name:
+            elif "Bli" in name:
                 attack = randint(12,60)
                 speed = randint(25,50)
-            elif "Noble" in name:
+            elif "Boble" in name:
                 attack = randint(12,120)
                 speed = randint(31,150)
-            elif "Nicholas" in name:
+            elif "Bibholas" in name:
                 attack = randint(60,80)
                 speed = randint(45,60)
     msgLog = MessageLog()
@@ -1188,11 +1254,11 @@ def main(maze):
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player,msgLog)
-        os.system('clear')
+        os.system('cls')
         newMaze.printMaze(player,msgLog)
         #newMaze.getBorder()
     if player.health <= 0:
-        os.system('clear')
+        os.system('cls')
         msgLog.addLog("Game Over!")
         msgLog.addLog("Score: "+str(player.getScore()))
         print(msgLog)
@@ -1205,7 +1271,7 @@ def main(maze):
         #newMaze.printMaze(player,True)
 
     else: 
-        os.system('clear')
+        os.system('cls')
         msgLog.addLog("Completed Maze!")
         msgLog.addLog("Score: "+str(player.getScore()))
         msgLog.fullLog()
@@ -1213,7 +1279,7 @@ def main(maze):
 def showBoth(entity1,entity2):
     """
     Displays both the player and monster hp percentages neatly in color
-
+    __author__ = 'Nicholas Koy'
     Args:
         entity1 (Player or Enemy): The main entity (usually a Player)
         entity2 (Enemy): The enemy being fought by Entity1
@@ -1236,23 +1302,24 @@ def showBoth(entity1,entity2):
         tem += " $e2#\n"
     tem2 = Template(tem).substitute(e2 = entity2.name)
     if len(tem2)%2:
-        battleScreen = "#" * (len(tem2)) + "\n"
+        battleScreen = "=" * (len(tem2)) + "\n"
         battleScreen = (battleScreen[0:len(entity1.name)] +\
              battleScreen[1+len(entity1.name):]) 
         tem2 = (tem2[0:len(entity1.name)] + tem2[1+len(entity1.name):]) 
     else:
-        battleScreen = "#" * (len(tem2)-1) + "\n"
+        battleScreen = "=" * (len(tem2)-1) + "\n"
     halfScreen = int(len(battleScreen)/2 -2)
     numGreen1 = int((entity1.health / entity1.maxhealth)* (halfScreen))
     numRed1 = halfScreen - numGreen1
     numGreen2 = int((entity2.health / entity2.maxhealth)* halfScreen)
     numRed2 = halfScreen - numGreen2
-    if numRed1 > halfScreen: numRed1 = halfScreen + 1
+    if numRed1 > halfScreen: numRed1 = halfScreen 
     if numRed2 > halfScreen: numRed2 = halfScreen
     os.system('cls')
-    hpbar1 = "\033[92m" + "="*(numGreen1) + \
-    "\033[0m"+"\033[91m" + "="*numRed1 + "\033[0m"
-    hpbar2 = "\033[91m" + "="*numRed2 + "\033[0m"+"\033[92m" + "="*numGreen2 \
+    hpSym = "%"
+    hpbar1 = "\033[92m" + hpSym *(numGreen1) + \
+    "\033[0m"+"\033[91m" + hpSym *numRed1 + "\033[0m"
+    hpbar2 = "\033[91m" + hpSym*numRed2 + "\033[0m"+"\033[92m" + hpSym*numGreen2 \
         + "\033[0m"
     bothbars = "#"+hpbar1 + "#" + hpbar2+ "#\n"
     entity2.name =temp 
@@ -1270,7 +1337,10 @@ def strike(entity1,entity2,msgLog):
     
     Side effect: Lowers entity2 hp if an attack lands through them. Prints to
                  stdout via msgLog
+    Returns: if an entity is dead
     """
+    if entity1.health <= 0 or entity2.health <= 0:
+        return True
     baseAccuracy = .7
     critChance = 3
     critDmg = 1
@@ -1279,7 +1349,7 @@ def strike(entity1,entity2,msgLog):
         critChance += int((entity1.speed - entity2.speed)/5)
     
     if randint(0,100) < critChance:
-        os.system('clear')
+        os.system('cls')
         msgLog.addLog(entity1.name +" sees a weak point in "+entity2.name)
         if isinstance(entity1,Player):
             showBoth(entity1,entity2)
@@ -1291,20 +1361,24 @@ def strike(entity1,entity2,msgLog):
         high = int(entity1.attack*1.1)
         damage = critDmg * randint(low,high)
         entity2.health -= damage
-        os.system('clear')
-        msgLog.addLog(entity1.name+" hits "+ entity2.name+ " for " +str(damage),combat=True)
+        os.system('cls')
+        msgLog.addLog(entity1.name+" hits "+ entity2.name+ " for " +str(damage)\
+            +" damage",True)
         if isinstance(entity1,Player):
             showBoth(entity1,entity2)
         else:
             showBoth(entity2,entity1)
     else: 
-        os.system('clear')
-        msgLog.addLog(entity1.name+" misses",combat=True)
+        os.system('cls')
+        msgLog.addLog(entity1.name+" misses their target",True)
         if isinstance(entity1,Player):
             showBoth(entity1,entity2)
         else:
             showBoth(entity2,entity1)
-    print(msgLog)
+    if entity1.health <= 0 or entity2.health <= 0:
+        return True
+    else:
+        return False
     
 def battle_monsters(entity1, entity2, msgLog : MessageLog()):
     """
@@ -1326,76 +1400,127 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
     """
     battleEnd = False
     while not battleEnd:
-        entity1Faster = entity1.speed >= entity2.speed
-        if entity1Faster:
-            if entity1.health <= 0 and entity2.health > entity1.health:
-                msgLog.addLog(entity2.name+" has won the battle against " +\
-                     entity1.name,combat=True)
-                battleEnd = True
-                if isinstance(entity1,Player):
-                    entity1.battlesFought += 1
-            elif(entity2.health <= 0 and entity1.health > entity2.health):
-                msgLog.addLog(entity1.name+" has won the battle against " +\
-                     entity2.name,combat=True)
-                if isinstance(entity1,Player):
-                    entity1.battlesFought += 1
-                    entity1.battlesWon += 1
-                battleEnd = True
-            if not battleEnd:
-                strike(entity1,entity2,msgLog)
-                sleep(2)
-                if entity1.health <= 0 and entity2.health > entity1.health:
-                    msgLog.addLog(entity2.name+" has won the battle against " +\
-                         entity1.name,combat=True)
-                    battleEnd = True
-                    if isinstance(entity1,Player):
-                        entity1.battlesWon += 1
-                        entity1.battlesFought += 1
-                elif(entity2.health <= 0 and entity1.health > entity2.health):
-                    msgLog.addLog(entity1.name+" has won the battle against " +\
-                         entity2.name,combat=True)
-                    if isinstance(entity1,Player):
-                        entity1.battlesWon += 1
-                        entity1.battlesFought += 1
-                    battleEnd = True
-                if not battleEnd:
-                    strike(entity2,entity1,msgLog)
-                    sleep(2)
-        else:
-            if entity1.health <= 0 and entity2.health > entity1.health:
-                msgLog.addLog(entity2.name+" has killed " + \
-                    entity1.name,combat=True)
-                if isinstance(entity1,Player):
-                    entity1.battlesWon += 1
-                    entity1.battlesFought += 1
-                battleEnd = True
-            elif entity2.health <= 0 and entity1.health > entity2.health:
-                msgLog.addLog(entity1.name+" has won the battle against " +\
-                     entity2.name,combat=True)
-                if isinstance(entity1,Player):
-                    entity1.battlesWon += 1
-                    entity1.battlesFought += 1
-                battleEnd = True
-            if not battleEnd:
-                strike(entity2,entity1,msgLog)
-                sleep(2)
-                if entity1.health <= 0 and entity2.health > entity1.health:
-                    msgLog.addLog(entity2.name+" has killed "+ entity1.name,\
-                        combat=True)
-                    if isinstance(entity1,Player):
-                        entity1.battlesFought += 1
-                    battleEnd = True
-                elif(entity2.health <= 0 and entity1.health > entity2.health):
-                    msgLog.addLog(entity1.name+" has won the battle against " +\
-                        entity2.name,combat=True)
-                    if isinstance(entity1,Player):
-                        entity1.battlesWon += 1
-                        entity1.battlesFought += 1
-                    battleEnd = True
-                if not battleEnd:
-                    strike(entity1,entity2,msgLog)
-                    sleep(2)
+        os.system('cls')
+        playerPresent = False
+        showBoth(entity1,entity2)
+        #prints stats and log if player is not dead
         print(msgLog)
+        if isinstance(entity1,Player):
+            if not entity1.hideStats:
+                print(entity1)
+            playerPresent = True
+
+        #performs one more check
+        if entity1.health <= 0:
+            msgLog.addLog(entity1.name + " is dead! check 1363 if it got here"+\
+            "then something went wrong")
+            break
+        actionChosen = False
+        if not playerPresent: actionChosen = True
+        while not (actionChosen) and playerPresent and not battleEnd:
+            resp = input("(A)ttack, (U)se item, (R)un, or (S)wap weapon\n" +\
+            "Or Toggle (stats)\n")
+            resp = resp.lower()
+            if resp not in ["a","u","r","s","stats"]:
+                print("Enter a valid response")
+            else:
+                actionChosen = True
+        if  isinstance(entity1,Enemy) or resp == "a" :
+            winner = False
+            entity1Faster = entity1.speed >= entity2.speed
+            if entity1Faster:
+                if not strike(entity1,entity2,msgLog): #Ent1 strikes doesnt kill
+                    #
+                    print(msgLog)
+                    sleep(2)
+                    if strike(entity2,entity1,msgLog): #E2 hits back and kills
+                        print(msgLog)
+                        winner = True
+                        battleEnd = True
+                        sleep(2)
+                else: #E1 strike didnt kill
+                    print(msgLog)
+                    winner = True
+                    battleEnd = True
+                    sleep(2)
+            else:#E2 hits first
+                if not strike(entity2,entity1,msgLog): #E2 didnt kill
+                    #sleep(2)
+                    print(msgLog)
+                    sleep(2)
+                    if strike(entity1,entity2,msgLog): #E1 hits back and kills
+                        winner = True
+                        battleEnd = True
+                else: #E2 killed e1
+                    print(msgLog)
+                    winner = True
+                    battleEnd = True
+                    sleep(2)
+            if winner:
+                os.system('cls')
+                who = ""
+                loser = ""
+                if entity1.health > entity2.health: 
+                    who = entity1.name
+                    loser = entity2.name
+                else: 
+                    who = entity2.name
+                    loser = entity1.name
+                msgLog.addLog(who + " killed " + loser)
+            print(msgLog)
+            if playerPresent and not entity1.hideStats:
+                print(entity1)
+            #Add loot generation around here
+            sleep(2)
+            
+                
+        elif resp == "stats" and isinstance(entity1,Player):
+            entity1.hideStats = not entity1.hideStats 
+        elif resp == "s":
+            sleep(1)
+            print("Not implemented yet")
+        elif resp == "u":
+            sleep(1)
+            print("Not implemented yet")
+        elif resp == "r":
+            enemyFaster = False
+            #success chance to flee
+            successChance = .05 * (7-entity2.montype) + \
+                .04 * (6-entity2.montype)
+            if entity1.speed < entity2.speed:
+                enemyFaster = True
+            else:
+                successChance += (entity1.speed - entity2.speed) / 500
+            successChance *= 100
+
+            if randint(0, 100) < successChance:
+                battleEnd = True
+                msgLog.addLog(entity1.name + " ran away successfully... loser")
+                entity1.battlesFought += 1
+                os.system('cls')
+                showBoth(entity1,entity2)
+                if not entity1.hideStats:
+                    print(entity1)
+                print(msgLog)
+            else:#This code below can be used in the other two options
+                msgLog.addLog(entity1.name + " tried to run away and failed")
+                if not strike(entity2,entity1,msgLog): #E2 didnt kill
+                    os.system('cls')
+                    showBoth(entity1,entity2)
+                    if not entity1.hideStats:
+                        print(entity1)
+                    print(msgLog)
+                else:
+                    winner = True
+                    battleEnd = True
+            #may want to clear here
+            #print(msgLog)
+            sleep(1.6)
+            
+        #Debugging and this check is needed to prevent msgLog spam
+        if entity1.health > 0:
+            os.system('cls') 
+            print(msgLog)
 def parse_args(arglist):
     """ Parse command-line arguments.
     
@@ -1416,3 +1541,11 @@ def parse_args(arglist):
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
     main(args.filename)
+else:
+    #Testing ground
+    msgLog = MessageLog()
+    e1 = Enemy()
+    e2 = Enemy()
+    p1 = Player("nicholadd",1,30,40,50)
+
+    battle_monsters(p1,e2,msgLog)
