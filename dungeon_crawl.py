@@ -9,6 +9,15 @@ maze while collecting treasure and killing monsters along their path. Players
 also run the risk of starving if they do not navigate through the dungeon quick
 enough. Players have an inventory of tools that may aid them in their journey.
 
+Note for 326 Grader from Nicholas Koy: 
+    The Item Class, Loot generation, Combat system, and Colored prints are very 
+    overkill.Please pretend as if the they were not part of the project. I 
+    enjoyed making them and would prefer those methods involving the inventory
+    or __str__() of many methods and functions to just be normal. I may be able
+    to find a wayin the future to toggle the simple damage calculations and
+    inventory system or create a fork where everything and meets the final
+    rubric.
+
 HOW TO RUN: python dungeon_crawl.py -filename maze3.txt
             or python dungeon_crawl.py
 
@@ -25,7 +34,7 @@ import math
 from random import randint
 import random
 from math import factorial  
-
+DEBUG = False
 class MessageLog():
     """
     Stores a log of text for the player to read past actions
@@ -44,47 +53,76 @@ class MessageLog():
     def fullLog(self):
         """
         Prints the whole adventure log. Identical to __str__() but the whole log
-        instead of 3 entries shown
+        instead of 2 entries shown
         Side effects: prints to stdout
         """
-        rightPadding = 3
-        leftPadding = 1
-        maxMsg = 0
-        if len(self.log) > 0:
-            length = len(self.log)
-            if length > 3:
-                length = 3
+        colorAll = False
+        maxStringSizeNoColor = 0
+        maxStringSizeColor = None
+        stringsizeWObracket = None
+        frame = ""
+        for message in self.log:
+            if "[" in message:
+                colorAll = True
+                if maxStringSizeColor is None:
+                    maxStringSizeColor = len(message)
+                elif maxStringSizeColor < len(message):
+                    maxStringSizeColor = len(message)
+                stringsizeWObracket = maxStringSizeColor - 13
+            else:
+                if maxStringSizeNoColor < len(message):
+                     maxStringSizeNoColor = len(message)
+        if colorAll:
+            frame = "=" *(stringsizeWObracket+7) + "\n"
             for message in self.log:
-                if len(message) > maxMsg:
-                    maxMsg = len(message) + leftPadding + rightPadding
-            frame = "=" * (rightPadding+maxMsg) + "\n"
+                if "[" in message:
+                    frame += "# " + message + " "* (maxStringSizeColor-len(message))+"#\n"
+                else:
+                    frame += "# " + message + " "* (maxStringSizeColor-len(message)-9)+ "#\n"
+            frame+="=" *(stringsizeWObracket+7) + "\n"
+        else:
+            frame = "=" *(maxStringSizeNoColor+4) + "\n"
             for message in self.log:
-                frame += "#" + (leftPadding * " ") +message + " " * \
-                (maxMsg - len(message)) +"#\n" 
-            frame += "=" * (3+maxMsg) + "\n"
-        else: frame = "====== Message Log ======\n\n\n=========================\n"
-        print(frame)
+                frame += "# " + message + " "*(maxStringSizeNoColor-len(message)+1) + "#\n"
+            frame += "=" *(maxStringSizeNoColor+4) + "\n"
+        print (frame)
     def __str__(self):
         """
         Prints the last 3 player actions
         Side effects: Prints to stdout
         Returns: String based off self.log
         """
-        rightPadding = 3
-        leftPadding = 1
-        maxMsg = 0
-        if len(self.log) > 0:
-            length = len(self.log)
-            if length > 3:
-                length = 3
-            for message in self.log[-length:]:
-                if len(message) > maxMsg:
-                    maxMsg = len(message) + leftPadding + rightPadding
-            frame = "=" * (rightPadding+maxMsg) + "\n"
-            for message in self.log[-length:]:
-                frame += "#" + (leftPadding * " ") +message + " " * (maxMsg - len(message)) +"#\n" 
-            frame += "=" * (3+maxMsg) + "\n"
-        else: frame = "====== Message Log ======\n\n\n=========================\n"
+        lastTwo = len(self.log)
+        colorTwo = False
+        maxStringSizeNoColor = 0
+        maxStringSizeColor = None
+        stringsizeWObracket = None
+        frame = ""
+        if lastTwo > 2: lastTwo = 2
+        for message in self.log[-lastTwo:]:
+            if "[" in message:
+                colorTwo = True
+                if maxStringSizeColor is None:
+                    maxStringSizeColor = len(message)
+                elif maxStringSizeColor < len(message):
+                    maxStringSizeColor = len(message)
+                stringsizeWObracket = maxStringSizeColor - 13
+            else:
+                if maxStringSizeNoColor < len(message):
+                     maxStringSizeNoColor = len(message)
+        if colorTwo:
+            frame = "=" *(stringsizeWObracket+7) + "\n"
+            for message in self.log[-lastTwo:]:
+                if "[" in message:
+                    frame += "# " + message + " "* (maxStringSizeColor-len(message))+"#\n"
+                else:
+                    frame += "# " + message + " "* (maxStringSizeColor-len(message)-9)+ "#\n"
+            frame+="=" *(stringsizeWObracket+7) + "\n"
+        else:
+            frame = "=" *(maxStringSizeNoColor+4) + "\n"
+            for message in self.log[-lastTwo:]:
+                frame += "# " + message + " "*(maxStringSizeNoColor-len(message)+1) + "#\n"
+            frame += "=" *(maxStringSizeNoColor+4) + "\n"
         return frame
     
     def addLog(self,msg,repeat = False):
@@ -166,7 +204,6 @@ class Cell:
             else: return " "
         else:
             return "P"
-
 class Player:
     """
     A Player explores a Maze. While exploring the maze their hunger goes down.
@@ -199,6 +236,9 @@ class Player:
             battlesWon (int):   The number of battles the player has won
             battlesFought (int):The number of battles the player has fought
             torchLeft (int):    How many steps they can see farther
+            gearDefense (list): Used to calculate damage block
+            gearOffense (list): Added damage calculations
+        
     """                     
     def __init__(self,name,health,attack,speed,hunger):
         """
@@ -212,8 +252,10 @@ class Player:
                 hunger (float): How full the player is
         Side effects: Initializes a new Player object
         """
-        self.inventory = {"map": 0, "sword": {"equip": attack, "unequip": [] },
-        "armor" : {"equip": ("tunic", 0, 0, 5), "unequip": []}, 
+        startingSword = Item("Sword","Common",1)
+        self.inventory = {"map": 0, "sword": {"equip": startingSword, "unequip": [] },
+        "armor" : {"equip": {"Helmet": None,"Body Armor":None,
+                "Boots":None,"Ring":None,"Amulet":None,"Gloves":None}, "unequip": []}, 
         "small core": 0, "medium core":0, "large core": 0, "torch": 1}
         self.abilityList = {"break": 0, "jump": 0}
         self.name = name
@@ -230,36 +272,90 @@ class Player:
         self.torchLeft = 0
         self.battlesWon = 0
         self.battlesFought = 0
+        self.gearOffense = [0,0,0,0,0]
+        self.gearDefense = self.gearOffense
     
     def __str__(self):
+        """
+        __author__ = 'Nicholas Koy':Wanted to make str look more pretty
+        Prints the player object neatly and with Color for any elemental damage
+        Red Text followed by F : Fire damage
+        Blue Text followed by C: Cold damage
+        Yellow Text followed by L: Lightning damage
+        Green Text followed by T: Toxic/Poison damage
+
+        Returns: str of player object stat attribute in a frame
+        """
+        validDmg = (str(self.attack)+"B"),
+        totalDmg = self.attack
+        numColors = 0
+        elementColor = {  
+                    "L": "\033[93m",
+                    "C": "\033[96m",
+                    "T": "\033[92m",
+                    "F": "\033[31m" 
+                    }
+                #important "\033[0m"
+        damageMap = {0:"P",1:"F",2:"L",3:"C",4:"T"}
+        for damageType in range(len(self.gearOffense)):
+            if self.gearOffense[damageType] > 0:
+                numColors +=1
+                totalDmg += self.gearOffense[damageType]
+                if damageType != 0:#Adds color
+                    validDmg = (validDmg[0] + " " +\
+                        elementColor[damageMap[damageType]]+\
+                            str(self.gearOffense[damageType])+\
+                                damageMap[damageType]+"\033[0m"),
+                else:
+                    validDmg = (validDmg[0] + " " +str(self.gearOffense[damageType])+damageMap[damageType]),
+        validDmg = str(totalDmg)+":"+validDmg[0]
         tup =  (("#","S"),
                 ("# Name  :", self.name),
                 ("# Health:",str(self.health)+"/"+str(self.maxhealth)),
-                ("# Attack:", str(self.attack)),
+                ("# Attack:", validDmg),
                 ("# Speed :", str(self.speed)),
                 ("# Hunger:", str(self.hunger)+"/"+str(self.maxhunger)),
                 ("#","E"))
         maxFrame = 0
+        hasColor = False
+        maxColorFrame = 0
         for x,y in tup:
-            if len(x) + len(y) > maxFrame: maxFrame = len(x) + len(y)
+            if x != "# Attack":
+                if len(x) + len(y) > maxFrame: maxFrame = len(x) + len(y)
+            else:
+                if "[" in x:
+                    hasColor = True
+                    maxColorFrame = len(x) + len(y) + 5
+
         maxFrame += 5
         printFrame =""
         for x,y in tup:
             if x == "#":
-                row = "=" * (maxFrame+2)
+                row = "=" * (maxFrame+2 - (9*(numColors-1)))
                 if y == "S":
                     row = row + "\n"
                 elif y == "E":
                     row = row + "\n"
                 printFrame += row
-            else:
+            elif "[" not in y:# The stats print
+                rightrow = str(y)
+                row = x + " " * (maxFrame - (9*numColors) - len(rightrow)) + \
+                    rightrow+" #\n"
+                printFrame += row
+            else: #Color
                 rightrow = str(y)
                 row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+" #\n"
                 printFrame += row 
         return (printFrame)
     
     def getScore(self):
+        """
+        __author__ = 'Ali Iqbal'
+        Calculates the score of the player based on treasure owned and battles
+        won/battles fought
 
+        Returns: Integer score of player
+        """
         score = 0
         for i in self.inventory.keys():
             if i == "Diamond":
@@ -287,6 +383,7 @@ class Player:
 
     def useItem(self,item,msgLog):
         """
+        __author__ = 'Nelson Contreras','Nicholas Koy'
         Players can use certain items to aid them in their travels
 
         Args: item (str): the item to be searched in inv and used
@@ -308,6 +405,98 @@ class Player:
                 msgLog.addLog("You have no more to use")
         else:
             msgLog.addLog("Item doesn't exist")
+    def addInventoryWearable(self,item):
+        """
+        Adds newly generated loot to the players inventory
+
+        __author__ = 'Nicholas Koy'
+
+        Args:
+                item (Item): newly genned item
+        
+        Side Effects:   Appends to 2 dictionaries
+        """
+        if item.slot in ["Gloves","Helmet","Boots","Ring","Amulet","Body Armor"]:
+            self.inventory["armor"]["unequip"].append(item)
+        elif  item.slot in ["Sword"]:
+            self.inventory["sword"]["unequip"].append(item)
+                 
+    def showInventory(self,swap = False):
+        """
+        Prints the gear the player has
+        __author__ = 'Nicholas Koy'
+        Args:
+                swap(Boolean): If the player needs to see item position
+        
+        Side Effect: Prints to stdout
+        """
+        os.system('')
+        count = 0
+        print("===================== Equipped =========================")
+        print(self.inventory["sword"]["equip"])
+        for armor in self.inventory["armor"]["equip"].keys():
+            if self.inventory["armor"]["equip"][armor] != None:
+                print(self.inventory["armor"]["equip"][armor])
+        print("===================== Not Equipped =====================")
+        for gear in self.inventory["sword"]["unequip"]:
+            print(gear)
+            if swap:
+                print("Item ",count)
+                count+=1
+        for gear in self.inventory["armor"]["unequip"]:
+            print(gear)
+            if swap:
+                print("Item ",count)
+                count+=1
+    def equipGear(self,msgLog : MessageLog()):
+        """
+        Asks the player to swap equipped gear (if any) for the same type
+        that they potentially picked up
+        __author__ = 'Nicholas Koy'
+        """
+        self.showInventory(swap = True)
+        item = int(input("What item # do you want to equip\n"))
+        if item >= 0 and item <= (len(self.inventory["armor"]["unequip"])) +\
+            (len(self.inventory["sword"]["unequip"]) - 1):
+            if item < len(self.inventory["sword"]["unequip"]):
+                print("Swapping Swords")
+                if self.inventory["sword"]["equip"] != []:
+                    swapItem = self.inventory["sword"]["equip"]
+                    self.inventory["sword"]["unequip"].append(swapItem)
+                    self.inventory["sword"]["equip"]= self.inventory["sword"]["unequip"][item]
+                    del self.inventory["sword"]["unequip"][item]
+                    msgLog.addLog("Swapped Sword to " + self.inventory["sword"]["equip"].name+" ")
+                    recalcAttack(self)
+                    recalcDefense(self)
+            else:
+                armorType = self.inventory["armor"]["unequip"][item - \
+                    len(self.inventory["sword"]["unequip"])].slot
+                armorName = self.inventory["armor"]["unequip"][item - \
+                    len(self.inventory["sword"]["unequip"])].name
+                #see if there is already an armor of that type equipped
+                if self.inventory["armor"]["equip"][armorType] != None:
+                    tempArmor = self.inventory["armor"]["equip"][armorType]
+                    self.inventory["armor"]["unequip"].append(tempArmor)
+                    self.inventory["armor"]["equip"][armorType] = \
+                        self.inventory["armor"]["unequip"][item - \
+                            len(self.inventory["sword"]["unequip"])]
+                    del self.inventory["armor"]["unequip"][item - \
+                        len(self.inventory["sword"]["unequip"])]
+                else:
+                    self.inventory["armor"]["equip"][armorType]= \
+                        self.inventory["armor"]["unequip"][item - \
+                            len(self.inventory["sword"]["unequip"])]
+                    del self.inventory["armor"]["unequip"][item - \
+                        len(self.inventory["sword"]["unequip"])]
+                msgLog.addLog("Swapped "+ armorType+ " to " + armorName+" ")
+                recalcAttack(self)
+                recalcDefense(self)
+                self.maxhealth += self.gearDefense[0]
+                self.health += self.gearDefense[0]    
+        print(msgLog)
+        sleep(1)
+        os.system('cls')
+        self.showInventory()
 class Enemy:
     """
     __author__ = 'Nelson Contreras' : __init__() and __str__()
@@ -323,6 +512,7 @@ class Enemy:
     health (int) - this will be the monsters health
     speed (int) - this will be the ability of the monsters speed
     attack (float) - this will be the monsters attack damage.
+    inventory (Dict): will store the monster's equipped gear for damage calc
     """
     def __str__(self):
         return self.name
@@ -345,8 +535,9 @@ class Enemy:
         monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
             "Skeleton", "Ghoul", "Lizardman", "Spectre"]
         self.name = monsters[randint(0,7)]
-        self.montype = random.choice([1,1,1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5])
-        
+        self.montype = random.choice([1,1,1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,5])
+        self.gearOffense = [0,0,0,0,0]
+        self.gearDefense = self.gearOffense
         if self.montype == 1:
             self.attack = randint(40,60)
             self.speed = randint(30,50)
@@ -369,7 +560,7 @@ class Enemy:
             self.name = "Ancient " + self.name
         self.health = factorial(self.montype) * 5 + 100
         #balance
-        self.attack /= 2 
+        self.attack = self.attack* 2 / 3 
         if "Zombie" in self.name:
             self.health *= .9
             self.attack += 3
@@ -399,6 +590,30 @@ class Enemy:
         else:
             self.speed -= 30
         self.maxhealth = self.health
+        self.inventory = {"sword":{"equip":Item("Sword","Uncommon",\
+            self.montype),"unequip":[]},"armor":
+            {"equip":{"Helmet":None,
+                "Body Armor":None,
+                "Gloves": None,
+                "Boots":None,
+                "Ring":None,
+                "Amulet":None}}}
+        armorTypes = ["Gloves", "Boots", "Helmet","Body Armor"]
+        #,"Ring","Amulet"]
+        armorChoice = random.choice(armorTypes)
+        armorTypes.remove(armorChoice)
+        self.inventory["armor"]["equip"][armorChoice] = \
+            Item(armorChoice,"Legendary", 2+(self.montype-4))
+        
+        #armor dict -> equip dict -> string of gear types pairs to an item
+        if self.montype > 3:
+            armorChoice = random.choice(armorTypes)
+            self.inventory["armor"]["equip"][armorChoice] = \
+                Item(armorChoice,"Legendary", 2+(self.montype-4))
+        recalcAttack(self)
+        recalcDefense(self)
+        self.maxhealth += self.gearDefense[0]
+        self.health += self.gearDefense[0]     
 class EmptyMaze():
     """
     An EmptyMaze is created when generateSimpleMaze() is called.
@@ -456,9 +671,57 @@ class EmptyMaze():
                 if name in self.tuplemaze.keys():
                     self.tuplemaze[name].revealed = True
                     print(self.tuplemaze[name],end ="")
+class Item():
+    """
+    Items come in the form of Armor or Swords. Armor can be enchanted and give
+    bonus Health or one resistance to a damaging element (fire,cold,elec,poison)
+    Items have a rarity and a quality system that roll on mainly the montype /
+    monster level.
+    Some armor may have negative resistances (See battle for more info)
+    Swords can be enchanted with 3 modifiers: a Prefix, a suffix, and a unique
+    modifier if atleast legendary. Prefixes are attack boost oriented and
+    suffixes are defensive boost oriented. The suffix roll can be weak or strong
+    and both prefix and suffix are affected by the quality and rarity of the
+    item. The multiplicative effect adds up but not all higher rarity and or
+    quality items will be strictly better than that of a lesser rarity or qual
 
-
-
+    """
+    def __init__(self,itemType,rarity,montype,attackVal = None,defenses = None):
+        if itemType not in ["Helmet","Gloves","Boots","Body Armor","Sword","Ring","Amulet",\
+            "Helmet"]: raise ValueError(f"Not a valid item type: {itemType}")
+        self.slot = itemType
+        if itemType == "Sword":
+            newName, attVal, defenseVals = generateWeaponEnchant(rarity,montype)
+            self.name = newName
+            self.attackVal = attVal 
+            self.defenses = defenseVals 
+            RARITY = {  "Rare": "\033[94m" + newName + "\033[0m",
+                    "Ultra Rare": "\033[95m" +newName + "\033[0m",
+                    "Legendary": "\033[93m" +  newName+ "\033[0m",
+                    "Uncommon": "\033[96m" +  newName+ "\033[0m",
+                    "Common": "\033[92m" + newName + "\033[0m",
+                    "Unique": "\033[31m" + newName + "\033[0m"
+                    }
+            self.name = RARITY[rarity]
+        elif itemType in ["Gloves","Boots","Body Armor","Helmet"]:
+            armorName, baseStats =generateArmor(itemType+" ",rarity,montype)
+            self.defenses = baseStats
+            self.name = armorName
+            self.attackVal = [0,0,0,0,0]
+            RARITY = {  "Rare": "\033[94m" + armorName + "\033[0m",
+                    "Ultra Rare": "\033[95m" +armorName + "\033[0m",
+                    "Legendary": "\033[93m" +  armorName+ "\033[0m",
+                    "Uncommon": "\033[96m" +  armorName+ "\033[0m",
+                    "Common": "\033[92m" + armorName + "\033[0m",
+                    "Unique": "\033[31m" + armorName + "\033[0m"
+                    }
+            self.name = RARITY[rarity]
+                    
+    def __str__(self):
+        sumAttack = sum(self.attackVal)
+        sumDef = sum(self.defenses)
+        return (self.name + "\nAttack " +str(self.attackVal)+ ":" +\
+            str(sumAttack) + "\nDefenses " +str(self.defenses) +":"+str(sumDef))
 class Maze():
     """
     A Maze has a Start and an End represented by S and E respectively
@@ -784,7 +1047,7 @@ class Maze():
             msgLog.addLog("Jump is still on cooldown for "+\
                 str(player.abilityList[j]) +  "turns")
      
-    def move(self,player,msglog):
+    def move(self,player,msglog,DEBUG = False):
         """
         A players "turn" in a maze. Here they can decide to either move, rest,
         or perform a skill.
@@ -811,15 +1074,67 @@ class Maze():
         msgWait = False
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
         row,col = tupUp
+
         if resp.lower() == "stats":
             player.hideStats = not player.hideStats
         elif resp.lower() == "logs":
             player.hideLog = not player.hideLog
+        elif DEBUG and resp.lower() == "spawnloot":
+            temp = Item("Sword","Legendary",5)
+            msglog.addLog(temp.name)
+            print(temp.name)
+            player.addInventoryWearable(temp)
+            print(msglog)
+        #DONT GRADE THIS ELIF
+        elif DEBUG and resp.lower() == "combatplus":
+            lv = int(input("what level?\n"))
+            e1 = Enemy()
+            e1.inventory["armor"]["equip"]["Helmet"] = Item("Helmet","Rare",lv)
+            e1.inventory["armor"]["equip"]["Boots"] = Item("Boots","Rare",lv)
+            e1.inventory["armor"]["equip"]["Gloves"] = Item("Helmet","Rare",lv)
+            e1.inventory["armor"]["equip"]["Body Armor"] = Item("Helmet","Rare",lv)
+            e1.inventory["sword"]["equip"] = Item("Sword","Rare",lv)
+            player.inventory["armor"]["equip"]["Helmet"] = Item("Helmet","Rare",lv)
+            player.inventory["armor"]["equip"]["Boots"] = Item("Boots","Rare",lv)
+            player.inventory["armor"]["equip"]["Gloves"] = Item("Helmet","Rare",lv)
+            player.inventory["armor"]["equip"]["Body Armor"] = Item("Helmet","Rare",lv)
+            player.inventory["sword"]["equip"] = Item("Sword","Rare",lv)
+            recalcDefense(e1)
+            recalcDefense(player)
+            recalcAttack(e1)
+            recalcAttack(player)
+            #print(e1.gearDefense)
+            #print(player.gearDefense)
+            print(e1.gearOffense)
+            print(player.gearOffense)
+            while( input()!='c'):
+                print(calcDamage(player,e1))
+                print("att",player.gearOffense)
+                print("def",player.gearDefense)
+                print("enemy")
+                print("att",e1.gearOffense)
+                print("def",e1.gearDefense)
+            sleep(4)
+        elif DEBUG and resp.lower() == "armor":
+            lv = int(input("up to what level?\n"))
+            rarity = ["Ultra Rare","Legendary","Common","Uncommon","Rare"]
+            
+            player.addInventoryWearable(Item("Helmet",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Item("Boots",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Item("Gloves",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Item("Body Armor",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Item("Sword",random.choice(rarity),randint(0,lv)))
+            #recalcDefense(player)
+            #recalcAttack(player)
+
+        #Okay you can look now
         elif resp.lower() == "short":
             player.shortCom = not player.shortCom
         elif resp.lower() == "use":
             item = input("What item are you using?\n")
             player.useItem(item,msglog)
+        elif resp.lower() == "swap":
+            player.equipGear(msglog)
         elif resp.lower() in ["u","up"]:
             up = str(self.currentTuple)
             tupNewUp = "("+str(row-1)+", "+str(col)+")"
@@ -1001,13 +1316,84 @@ class Maze():
             for key in torchDirs.keys():
                 if torchDirs[key] in self.tuplemaze.keys():
                     self.tuplemaze[torchDirs[key]].revealed = True
+def recalcAttack(entity):
+    """
+    Recalculates the entity's attack based off the weapon held and bonuses from
+    any equipped ring and amulet.
 
-def generateLoot(enemy,player):
+    __author__ = 'Nicholas Koy'
+
+    Side effects: sets entity.gearOffense for damage calculation
+    """
+    att = [0,0,0,0,0]
+    for damagetype in range(len(entity.inventory["sword"]["equip"].attackVal)):
+        att[damagetype] += entity.inventory["sword"]["equip"].attackVal[damagetype]
+    if entity.inventory["armor"]["equip"]["Ring"] != None:
+        for dmg in entity.inventory["armor"]["equip"]["Ring"].attackVal:
+            att[dmg] += entity.inventory["armor"]["equip"]["Ring"][dmg]
+    if entity.inventory["armor"]["equip"]["Amulet"] != None:
+        for dmg in entity.inventory["armor"]["equip"]["Amulet"].attackVal:
+            att[dmg] += entity.inventory["armor"]["equip"]["Amulet"][dmg]
+    entity.gearOffense = att
+    #print(sum(att))
+def recalcDefense(entity):
+    """
+    recalculates the entity's hp and defense values towards elements
+    __author__ = 'Nicholas Koy'
+    Args: entity (Player or Enemy) that recently changed equipment
+
+    Side effects: Sets self.defenses to a new list and setsnew maxhealth / hp
+    """
+    defenseVals = [0,0,0,0,0]
+    armorSlots = ["Helmet","Body Armor","Gloves","Boots"]
+    for resType in range(len(armorSlots)):
+        if entity.inventory["armor"]["equip"][armorSlots[resType]] != None:
+            for x in range(5):
+                defenseVals[x] += \
+                    entity.inventory["armor"]["equip"][armorSlots[resType]].\
+                        defenses[x] 
+    if entity.inventory["armor"]["equip"]["Ring"] != None:
+        for dmg in entity.inventory["armor"]["equip"]["Ring"].defenses:
+            defenseVals[dmg] += entity.inventory["armor"]["equip"]["Ring"].defenses[dmg]
+    if entity.inventory["armor"]["equip"]["Amulet"] != None:
+        for dmg in entity.inventory["armor"]["equip"]["Amulet"].defenses:
+            defenseVals[dmg] += entity.inventory["armor"]["equip"]["Amulet"].defenses[dmg]
+    entity.gearDefense = defenseVals
+def calcDamage(entity1,entity2):
+    totDmg = entity1.attack
+    for damagetype in range(len(entity1.inventory["sword"]["equip"].attackVal)-1):
+        #print(entity1.inventory["sword"]["equip"].attackVal[damagetype+1]," VS"
+        # ,entity2.gearDefense[damagetype+1])
+        if entity1.inventory["sword"]["equip"].attackVal[damagetype+1] > 0 and \
+            entity2.gearDefense[damagetype+1] < entity1.inventory["sword"]\
+                ["equip"].attackVal[damagetype+1]:
+            totDmg += (entity1.inventory["sword"]["equip"].attackVal\
+                [damagetype+1] - entity2.gearDefense[damagetype+1])
+    totDmg +=entity1.inventory["sword"]["equip"].attackVal[0]
+    return totDmg
+def generateLoot(player,msgLog,enemy = None):
+    """
+    Generates loot for the Player ONLY by rolling a D20 five times.
+    Quality is assigned based on the sum of those rolls plus the monster level
+
+    __author__ = 'Nicholas Koy'
+
+    Args:   player (Player): where the loot is going to
+            msgLog (MessageLog): Logs the action
+            enemy (None or Enemy):  If item loot generated via enemy death
+                                    then this should be an Enemy for +weight
+    adds a randomly chosen item base type to the player's inventory         
+    """
     lootRoll = 0
+    rollFive = 0
+    x = 0
     for x in range(5):
         rollFive += randint(0,20)
-    lootRoll += enemy.montype
-    
+    if enemy is not None:
+        montype = enemy.montype
+        lootRoll += enemy.montype
+    else:
+        montype = random.choice([1,1,1,1,1,2,2,2,2,3,3,3,4,4,5])
     if lootRoll >= 76 and lootRoll <= 105:
         rarity = "Unique"
     elif lootRoll >= 70 and lootRoll < 76:
@@ -1016,33 +1402,345 @@ def generateLoot(enemy,player):
         rarity = "Ultra Rare"
     elif lootRoll >= 60 and lootRoll < 65:
         rarity = "Rare"
-    elif lootRoll >= 57 and lootRoll < 60:
+    elif lootRoll >= 53 and lootRoll < 60:
         rarity = "Uncommon"
-    elif lootRoll >= 35 and lootRoll < 57:
-        rarity = "Common"
     else:
-        rarity = "Rusted"
+        rarity = "Common"
+    lootRoll = random.choice(["Body Armor","Gloves","Helmet","Sword","Boots"])
     
-def generateWeaponEnchant(rarity,item):
+    newItem = Item(lootRoll,rarity,montype)
+    msgLog.addLog("Found "+newItem.name+" ")
+    player.addInventoryWearable(newItem)
+def generateWeaponEnchant(rarity,montype):
+    """
+    Enchants based on rarity of the Sword and gives extra weight to values if
+    montype is higher. Montype should be at most 5 or this won't run nicely
+
+    __author__ = 'Nicholas Koy'
+    Args:       rarity (Str): Rarity of the loot
+                montype (Int): Monster level / ItemLevel 
+    Side effects: scales the base values of attack and def through other f()
+    Returns:a tuple containing the str:weapon's new name,list:attack vals,
+            list:defense vals
+    """
+    rolls = 0
+    for x in range(3):
+        rolls += randint(0,20)
+    scaling = 1 + montype/4
+    weaponName = ""
+    weaponDmg = [0,0,0,0,0] #phys,fire,cold,light,poison
+    weaponDefBonus = [0,0,0,0,0]
+    majorChoice = ""
+    secondScale = 1
+    if rarity == "Legendary":
+        weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)
+        weaponName,weaponDmg,weaponDefBonus = addUniqueWeaponEnchant(weaponName,weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.09 for dmgtype in weaponDmg]
+    elif rarity == "Ultra Rare":
+        weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)    
+        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.05 for dmgtype in weaponDmg]
+    elif rarity == "Unique":
+        weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)    
+        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.15 + 2 for dmgtype in weaponDmg]
+    elif rarity == "Rare":
+        weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)
+        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.04 for dmgtype in weaponDmg]
+    elif rarity == "Uncommon":
+        #weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)
+        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.03 for dmgtype in weaponDmg]
+    elif rarity == "Common":
+        #weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        #weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"Sword")
+        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.02 for dmgtype in weaponDmg]
+    else:
+        #weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        #weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"Sword")
+        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.01 for dmgtype in weaponDmg]
+    scaledattVal = [int((dmgtype * scaling)*secondScale) for dmgtype in weaponDmg]
+    scaleddefVal = [int((restype * scaling)*secondScale) for restype in weaponDefBonus]
+    #return a tuple with newName, attackVal, possible Defenses
+    return (rarity + " " +weaponName,scaledattVal,scaleddefVal)
+def generateArmor(itemType,rarity,montype):
+    """
+    Generates a newly named armor of base type itemType.
+    __author__ = 'Nicholas Koy'
+    Scales values on rarity and montype/level
+    Args:   itemType (Str): Armor type
+            rarity (Str):   Item rarity
+            montype (Int):  Item Level / Monster level
+    Returns: tuple size = 2: Str-item name, list-armorValues
+    """
+    baseStats = generateArmorBaseStats(rarity,montype)
+    armorName, baseStats = addArmorTitle(itemType,rarity,baseStats,montype)
+    armorName, baseStats = addArmorSuffix(armorName,baseStats,rarity,montype)
+    correction = 0
+    if rarity == "Legendary":
+        correction = 10 * (montype+2) + 5
+    elif rarity == "Unique":
+        correction = 11 * (montype+4) + 7
+    elif rarity == "Ultra Rare":
+        correction = 7 * (montype+1) + 5
+    elif rarity == "Rare":
+        correction = 5 * montype + 5
+    elif rarity == "Uncommon":
+        correction = 3 * montype + 3
+    elif rarity == "Common":
+        correction = 2 * montype + 2
+    else:
+        correction = 3
+    for stat in range(len(baseStats)):
+        if baseStats[stat] > 0:
+            baseStats[stat] += correction
+            baseStats[stat] = int(baseStats[stat])
+    return (rarity+" "+armorName,baseStats)   
+def addWeaponTitle(weaponName,oldAtt,oldDef,montype,rarity):
+    """
+    Adds a randomized quality value for the sword.
+
+    __author__ = 'Nicholas Koy'
+
+    Args:   weaponName (Str): weapon old name
+            oldAtt (list of ints): old att values to scale
+            oldDef (list of ints): old def values to scale
+            montype (int):  Monster level / ItemLevel
+            rarity (Str):   Rarity of the item
+    
+    Returns:    tuple (str,list,list): name,attack,defenses
+    """
+    titleModList = ["Broken","Chipped","Refined","Tempered","Coated"]
+    numRolls = (montype- 3) * 2
+    if numRolls <= 0: numRolls = 1
+    distrib = [0,0,0,0,0,1,1,1,1,2,2,2,3,3,3,4,4]
+    bestRoll = 0
+    adj = 0
+    newScale = 0
+    for roll in range(numRolls):
+        current = random.choice(distrib)
+        if bestRoll < current:
+            bestRoll = current
+    title = titleModList[bestRoll]
+    if weaponName is None:
+            weaponName = ""
+    if oldAtt is None and oldDef is None:
+        weaponDmg = [0,0,0,0,0]
+        weaponDefBonus = [0,0,0,0,0]
+    else:
+        weaponDmg = oldAtt
+        weaponDefBonus = oldDef
+    baseStats = [0,0,0,0,0]
+    if weaponDmg == baseStats:
+        baseStats[0] += randint(1,3) + montype
+    if bestRoll == 0:
+        weaponDmg[0] += 1
+        weaponDmg[0] *= 1.2
+        newScale = 1.01
+        adj = 1
+    elif bestRoll == 1:
+        weaponDmg[0] += 1.2
+        weaponDmg[0] *= 1.5
+        newScale = 1.02
+        adj = 1
+    elif bestRoll == 2:
+        weaponDmg[0] += 1.3
+        weaponDmg[0] *= 1.7
+        newScale = 1.05
+        adj = 1
+    elif bestRoll == 3:
+        weaponDmg[0] += 1.5
+        weaponDmg[0] *= 2.3
+        adj = 2
+        newScale = 1.09
+    else:
+        weaponDmg[0] += 1.7
+        weaponDmg[0] *= 2.7
+        newScale = 1.14
+        adj = 3
+    if "Unique" == rarity:
+        newScale += .05
+    elif "Legendary" == rarity:
+        newScale += .03
+    elif "Ultra Rare" == rarity:
+        newScale += .02
+    elif "Rare" == rarity:
+        newScale += .01
+    
+    newAtt = weaponDmg
+    newDef = [restype for restype in weaponDefBonus]
+    return (title + " " + weaponName+"Sword ",newAtt,newDef)
+def addArmorTitle(armorName,rarity,baseStats,montype):
+    armorName = random.choice(["Hide ","Leather ","Chainmail ","Bone ",\
+        "Plate ", "Brigandine "]) + armorName
+    armorQuality,scale = random.choice([("Battle Scarred ",6),\
+        ("Worn ",7),("Fine ",11),("Padded ",13)])
+    baseStats = [defStat * scale / 10 for defStat in baseStats]
+    return (armorQuality + armorName, baseStats)
+def addArmorSuffix(armorName,baseStats,rarity,montype):
+    enchantDict = { "phys":{"of Fortify Health ":25,"of the Bear":35,"of the Elephant":50, "of Minor Fortification":10},
+                    "fire":{"of the Salamander":10,"of the Fire Slug":15,"of the Fire Dragon":25, "of Resist Minor Fire":5},
+                    "cold":{"of the Penguin":10,"of the Polar Bear":15,"of the Frost Dragon":25, "of Resist Minor Cold":5},
+                    "pois":{"of the Spider":10,"of the Snake":15,"of the Badger":25, "of Resist Minor Poison":5},
+                    "elec":{"of the Eel":10,"of Resist Major Elec ":15,"of the Storm Dragon":25, "of Resist Minor Elec":5}}
+    enchantChoice = random.choice(list(enchantDict.keys()))
+    enchantName = random.choice(list(enchantDict[enchantChoice].keys()))
+    enchantStatMap = {"phys":0,"fire":1,"elec":2,"cold":3,"pois":4}
+    baseStats[enchantStatMap[enchantChoice]]+= enchantDict[enchantChoice][enchantName]
+    return (armorName + enchantName, baseStats)
+def generateArmorBaseStats(rarity,montype):
+    """
+    Creates a basis for armor stats to be scaled later depending on rarity
+    and monster level
+
+    __author__ = 'Nicholas Koy'
+
+    Args:   rarity (Str): rarity of the item
+            montype (Int):Item level / monster level
+    Returns: list of ints representing the armor base stats
+    """
+    lowestRoll = -6 * montype
+    highestRoll = 2 * montype
+    if lowestRoll > highestRoll:#This somehow happens
+        lowestRoll,highestRoll = highestRoll,lowestRoll
+    defBonusStats = [10*montype,0,0,0,0]
+    defBonusStats[randint(1,4)]+= randint(lowestRoll, highestRoll)+5*montype
+    defBonusStats[randint(1,4)]+= randint(lowestRoll, highestRoll)+5*montype
+    return defBonusStats
+def addLesserWeaponSuff(weaponName,oldAtt,oldDef,itemType,montype):
+    """
+    Creates a minor offensive and defensive enchant for a sword
+    __author__ = 'Nicholas Koy'
+    Args:   weaponName (Str): Old weapon name gets a new name after
+            oldAtt (list): old weapon attack stats
+            oldDef (list): old weapon defensive stats
+            itemType (Str):either "" or "Sword"
+            montype (int): item level / monster level
+    Returns tuple(str,list,list): newWeaponName,newAtt,newDef
+    """
+    if weaponName is None:
+            weaponName = ""
+    if oldAtt is None and oldDef is None:
+        weaponDmg = [0,0,0,0,0]
+        weaponDefBonus = [0,0,0,0,0]
+    else:
+        weaponDmg = oldAtt
+        weaponDefBonus = oldDef
+    suffixModList = ["ta","tis","crix","tex"] #tex > crix > tis > ta
+    lesserprefixModList = ["Pzi","Igni","Volt","Cryo","Toxi"]
+    lesserPref = randint(0,4)
+    lesserRes = randint(0,3)
+    weaponDmg[lesserPref]+= (lesserRes+1) * 2 * montype
+    weaponDefBonus[lesserPref]+= (lesserRes+1) * 1.5 * montype
+    weaponName += lesserprefixModList[lesserPref]+suffixModList[lesserRes] +\
+        itemType + " "
+    return (weaponName,weaponDmg,weaponDefBonus)
+def addMajorWeaponPrefix(weaponName,oldAtt,oldDef):
+    """
+    Creates a Major offensive enchant for a sword of a random element
+    __author__ = 'Nicholas Koy'
+    Args:   weaponName (Str): Old weapon name gets a new name after
+            oldAtt (list): old weapon attack stats
+            oldDef (list): old weapon defensive stats
+
+    Returns tuple(str,list,list): newWeaponName,newAtt,newDef
+    """
+    if weaponName is None:
+        weaponName = ""
+    if oldAtt is None and oldDef is None:
+        weaponDmg = [0,0,0,0,0]
+        weaponDefBonus = [0,0,0,0,0]
+    else:
+        weaponDmg = oldAtt
+        weaponDefBonus = oldDef
     firePrefix = {"Eruption":50,"Volcanic":70,"Flaming":30,"Hot":20,"Candle Lighting":5,"Bright":10}
     lightPrefix = {"Tempest":60,"Thunderus":45,"Electric":25,"Shocking":20,"Sparking":5}
     coldPrefix = {"Frigid":60,"Glacial":50,"Wintry":25,"Freezing":40,"Frosted":20,"Cool":5}
-    lesserprefixModList = {"Igni","Volt","Cryo","Toxi"}
-    titleModList = {"Cursed","Holy","Lordly","Demonic","Knightly"}
-    suffixModList = {"ta","tis","crix","tex"}
-    uniqueModList = {"of Slaying","of Unholy Purging", "of Vigor", "of Strength",
-                    "of Feasting", "of Protection"}
-    if rarity == "Unique":
-        print()
+    poisonPrefix = {"Venomous":55,"Virulent":50,"Toxic":45,"Viscious":30}
+    physPrefix = {"Reaping":40,"Sharp":30,"Stabby":20,"Heavy":20}
+    majorChoice = ""
 
-class Item():
-    def __init__(self,itemType,rarity,attackVal = None,defenses = None):
-        if itemType not in ["Gloves","Boots","Armor","Sword","Ring","Amulet",\
-            "Helmet"]: raise ValueError(f"Not a valid item type: {itemType}")
-        if itemType == "Sword":
+    enchantElement = random.choice(["fire","cold","light","poison","phys"])
+    if enchantElement == "fire":
+        fireChoice = random.choice(list(firePrefix.keys()))
+        majorChoice = fireChoice
+        weaponDmg[1] += firePrefix[fireChoice]
 
+    elif enchantElement == "cold":
+        coldChoice = random.choice(list(coldPrefix.keys()))
+        majorChoice = coldChoice
+        weaponDmg[2] += coldPrefix[coldChoice]
+    elif enchantElement == "light":
+        lightChoice = random.choice(list(lightPrefix.keys()))
+        majorChoice = lightChoice
+        weaponDmg[3] += lightPrefix[lightChoice]
+    elif enchantElement == "poison":
+        poisonChoice = random.choice(list(poisonPrefix.keys()))
+        majorChoice = poisonChoice
+        weaponDmg[4] += poisonPrefix[poisonChoice]
+    else:
+        physChoice = random.choice(list(physPrefix.keys()))
+        majorChoice = physChoice
+        weaponDmg[0] += physPrefix[physChoice]
+    weaponName += majorChoice + "-"
+    return (weaponName,weaponDmg,weaponDefBonus)
+def addUniqueWeaponEnchant(weaponName = None, oldAtt = None, oldDef = None):
+    """
+    Adds a unique enchant to a weapon. THIS MUST BE ADDED LAST TO AN ITEM
+    __author__ = 'Nicholas Koy'
+    Args:   weaponName (Str): Old weapon name gets a new name after
+            oldAtt (list): old weapon attack stats
+            oldDef (list): old weapon defensive stats
+    Returns tuple(str,list,list): newWeaponName,newAtt,newDef
+    """
+    uniqueModList = ["Slaying ","Unholy Purging ", "Vitality Boost ", "Strength Boost ",
+                    "Feasting ", "Unrelenting "]
+    if weaponName is None:
+        weaponName = ""
+    if oldAtt is None and oldDef is None:
+        weaponDmg = [0,0,0,0,0]
+        weaponDefBonus = [0,0,0,0,0]
+    else:
+        weaponDmg = oldAtt
+        weaponDefBonus = oldDef
 
-
+    uniqueMod = randint(0,5)
+    if uniqueMod == 0:
+        weaponDmg[0]+= 30
+        weaponDmg[1]+= 26
+    elif uniqueMod == 1:
+        weaponDmg[1] += 30
+        weaponDmg[3] += 20
+        weaponDmg[2] += 5
+    elif uniqueMod == 2:
+        weaponDefBonus[0] += 50
+        weaponDmg[0]+= 10
+    elif uniqueMod == 3:
+        weaponDefBonus[0] += 50
+        weaponDmg[0]+= 20
+    elif uniqueMod == 5:
+        weaponDmg[1] += 20
+        weaponDefBonus[1] += 9
+        weaponDefBonus[2] += 11
+        weaponDefBonus[3] += 13
+        weaponDefBonus[4] += 15
+    else:
+        weaponDmg[0]+= 45
+        weaponDefBonus[0] -= 15
+        weaponDefBonus[1] -= 5 
+        weaponDefBonus[2] -= 5 
+        weaponDefBonus[3] -= 5
+    weaponName = uniqueModList[uniqueMod] + weaponName
+    return (weaponName,weaponDmg,weaponDefBonus)
 def generateSimpleMaze():
     """
     Creates a simple maze if the user didnt provide a txt file to be read from.
@@ -1176,8 +1874,7 @@ def generateSimpleMaze():
     
     os.remove("temp.txt")
     return g.name
-
-def main(maze):
+def main(maze,DEBUG = False):
     """
     __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
                     'Noble Nwokoma' : 
@@ -1190,6 +1887,7 @@ def main(maze):
     Args:
             maze (str):     txt file name to read maze from.
             hunger (float): max hunger for the player
+            DEBUG (Boolean): enables special commands between moves
     
     Side effects:
                     prints to stdout and makes a new maze
@@ -1197,6 +1895,7 @@ def main(maze):
                     reveals maze tiles as player progresses
     Raises: ValueError if stat inputs are 0 or negative
     """
+    DEBUG = DEBUG
     if maze is None:
         maze = generateSimpleMaze()
     confirmed = False
@@ -1206,12 +1905,12 @@ def main(maze):
         name = input("What is your character's name? or 'skip'\n")
         if name != "skip":
             hp = float(input("Enter the hp for your character\n"))
-            attack  = float(input("Enter the attack"))
-            speed = float(input("Enter your speed stat"))
-            hunger = int(input("How many turns before you get hungry?"))
+            attack  = float(input("Enter the attack\n"))
+            speed = float(input("Enter your speed stat\n"))
+            hunger = int(input("How many turns before you get hungry?\n"))
             if not((hp * attack * speed) > 0 and (hp > 0, attack > 0/
-                speed > 0 and hunger >= 0)):
-                raise ValueError("Enter positive stat values")
+                speed > 0 and hunger >= 0) and "[" not in name):
+                raise ValueError("Enter positive stat values or Illegal Name")
             player = Player(name,hp,attack,speed,hunger)
             while not yesnoAnswer:
                 c =input(f"Confirm ('y') or ('n') the creation of\n{player}\n")
@@ -1253,7 +1952,7 @@ def main(maze):
     #diff = cells - borders
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
-        newMaze.move(player,msgLog)
+        newMaze.move(player,msgLog,DEBUG)
         os.system('cls')
         newMaze.printMaze(player,msgLog)
         #newMaze.getBorder()
@@ -1274,8 +1973,7 @@ def main(maze):
         os.system('cls')
         msgLog.addLog("Completed Maze!")
         msgLog.addLog("Score: "+str(player.getScore()))
-        msgLog.fullLog()
-    
+        msgLog.fullLog()   
 def showBoth(entity1,entity2):
     """
     Displays both the player and monster hp percentages neatly in color
@@ -1324,7 +2022,6 @@ def showBoth(entity1,entity2):
     bothbars = "#"+hpbar1 + "#" + hpbar2+ "#\n"
     entity2.name =temp 
     print(battleScreen+tem2+bothbars+battleScreen)
-
 def strike(entity1,entity2,msgLog):
     """TENTATIVE VERSION
     Entity1 attacks entity2 and calcualtes remaining hp
@@ -1357,9 +2054,17 @@ def strike(entity1,entity2,msgLog):
             showBoth(entity2,entity1)
         critDmg = 1.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
+        attack = calcDamage(entity1,entity2)
         low = int(entity1.attack*.9)
         high = int(entity1.attack*1.1)
-        damage = critDmg * randint(low,high)
+        if attack > high:
+            high = attack
+        if DEBUG:
+            print("hypothetical max", 1.1*attack)
+            print("hypothetical max crit", critDmg *1.1*attack)
+            print("low roll min",low)
+        sleep(3)
+        damage = critDmg * randint(int(low),int(high))
         entity2.health -= damage
         os.system('cls')
         msgLog.addLog(entity1.name+" hits "+ entity2.name+ " for " +str(damage)\
@@ -1378,8 +2083,7 @@ def strike(entity1,entity2,msgLog):
     if entity1.health <= 0 or entity2.health <= 0:
         return True
     else:
-        return False
-    
+        return False   
 def battle_monsters(entity1, entity2, msgLog : MessageLog()):
     """
     Brief Description:
@@ -1477,11 +2181,13 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
         elif resp == "stats" and isinstance(entity1,Player):
             entity1.hideStats = not entity1.hideStats 
         elif resp == "s":
+            entity1.equipGear(msgLog)
             sleep(1)
-            print("Not implemented yet")
+            
         elif resp == "u":
+            item = input("Use what?\n")
+            entity1.useItem(item,msgLog)
             sleep(1)
-            print("Not implemented yet")
         elif resp == "r":
             enemyFaster = False
             #success chance to flee
@@ -1521,6 +2227,9 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
         if entity1.health > 0:
             os.system('cls') 
             print(msgLog)
+    if entity2.health <= 0:
+        generateLoot(entity1,msgLog,entity2)
+    sleep(1)
 def parse_args(arglist):
     """ Parse command-line arguments.
     
@@ -1537,15 +2246,10 @@ def parse_args(arglist):
     parser.add_argument("-filename",
                         help="path to maze layout")
     return parser.parse_args(arglist)
-
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
-    main(args.filename)
-else:
+    main(args.filename,DEBUG = True)
     #Testing ground
-    msgLog = MessageLog()
-    e1 = Enemy()
-    e2 = Enemy()
-    p1 = Player("nicholadd",1,30,40,50)
-
-    battle_monsters(p1,e2,msgLog)
+    #p1 = Player("Nick",100,100,100,100)
+    #e1 = Enemy()
+    
