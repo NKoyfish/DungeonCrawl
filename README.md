@@ -6,7 +6,17 @@ run by entering
 or 
 ### "python dungeon_crawl.py -filename maze3.txt"
 the -filename arg is optional and a maze will be generated for the user if a file is not provided
-
+## Features to potentially add
+    
+## Features and fixes as of 5/04/21
+  - Added colors to the printMaze(), armor, weapons, and stat screen. Combat screen may be next
+  - Changed the combat system from just taking an entity's strength and rolling from 90 to 110 %
+    of that value. New combat calculates damage at a minimum of your base attack and any weaknesses
+    to elements an enemy may have so long as you deal damage of that type.
+  - Every Enemy spawns with at least one item but drops a different item on death.
+  - main now has a DEBUG argument defaulted to False.
+      DEBUG mode enables the user to auto create a set of armor and a weapon
+      "armor" and "combatplus"
 ## Features and fixes as of 4/30/21
   - obscures tiles the player hasnt visited or been in one-cell proximity to
   - Neatly clears out prints (Before it would keep appending to the terminal with new maze prints)
@@ -21,9 +31,7 @@ the -filename arg is optional and a maze will be generated for the user if a fil
   - fixed the confusion between __str__() and __repr__()
   - auto-run fights between player and enemies
 
-## TODO:
-  - Neatly print HP bars of the Player and Enemy during battle below the Message Log
-  - useItem() / eatFood()
-  - Make enemies drop items and equipment depending on their level
-  - allow the player to swap gear during exploration or in combat
-  - allow the player to flee from combat
+##  TODO:
+  - Determine how we want stats to be printed.
+  - Balance damage (low priority)
+  - Make sure screens are consistent across new actions and clear screens
