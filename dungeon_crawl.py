@@ -36,6 +36,8 @@ import random
 from math import factorial  
 DEBUG = False
 SHOW_N_MESSAGES = 4
+def cls():
+    os.system('cls' if os.name == 'nt' else 'clear')
 class MessageLog():
     """
     Stores a log of text for the player to read past actions
@@ -512,7 +514,7 @@ class Player:
         msgLog.addLog(action)  
         print(msgLog)
         sleep(1)
-        os.system('cls')
+        cls()
         self.showInventory()
     def unequipGear(self,itemType,msgLog : MessageLog()):
         """
@@ -1049,7 +1051,7 @@ class Maze():
                         jumpable.append(jumpCheck)
             if len(jumpable) > 1:
                 while not choose:
-                    os.system('cls')
+                    cls()
                     strjump = ""
                     for direc in jumpable:
                         strjump += (direc + " ")
@@ -1276,7 +1278,7 @@ class Maze():
                 self.tuplemaze[str(self.currentTuple)].obsID = " "
                 enemyGen = Enemy()
                 msglog.addLog(player.name+" encountered a(n) " + enemyGen.name)
-                os.system('cls')
+                cls()
                 print(msglog)
                 sleep(1.3)
                 battle_monsters(player, enemyGen,msglog)
@@ -1951,7 +1953,7 @@ def main(maze,DEBUG = False):
     if maze is None:
         maze = generateSimpleMaze()
     confirmed = False
-    os.system('cls')
+    cls()
     while not confirmed:
         yesnoAnswer = False
         name = input("What is your character's name? or 'skip'\n")
@@ -1974,7 +1976,7 @@ def main(maze,DEBUG = False):
                     confirmed = False
                 else:
                     print("(Y)es or (N)o confirmation")
-                os.system('cls')
+                cls()
         else:
             confirmed = True
             player_choice = ["Belson", "Bli", \
@@ -2005,16 +2007,16 @@ def main(maze,DEBUG = False):
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player,msgLog,DEBUG)
-        os.system('cls')
+        cls()
         newMaze.printMaze(player,msgLog)
         #newMaze.getBorder()
     if player.health <= 0:
-        os.system('cls')
+        cls()
         msgLog.addLog("Game Over!")
         msgLog.addLog("Score: "+str(player.getScore()))
         print(msgLog)
         sleep(3)
-        os.system('cls')
+        cls()
         player.hideLog = True
         newMaze.printMaze(player,msgLog,True)
         sleep(3)
@@ -2022,7 +2024,7 @@ def main(maze,DEBUG = False):
         #newMaze.printMaze(player,True)
 
     else: 
-        os.system('cls')
+        cls()
         msgLog.addLog("Completed Maze!")
         msgLog.addLog("Score: "+str(player.getScore()))
         msgLog.fullLog()   
@@ -2065,7 +2067,7 @@ def showBoth(entity1,entity2):
     numRed2 = halfScreen - numGreen2
     if numRed1 > halfScreen: numRed1 = halfScreen 
     if numRed2 > halfScreen: numRed2 = halfScreen
-    os.system('cls')
+    cls()
     hpSym = "%"
     hpbar1 = "\033[92m" + hpSym *(numGreen1) + \
     "\033[0m"+"\033[91m" + hpSym *numRed1 + "\033[0m"
@@ -2098,7 +2100,7 @@ def strike(entity1,entity2,msgLog):
         critChance += int((entity1.speed - entity2.speed)/5)
     
     if randint(0,100) < critChance:
-        os.system('cls')
+        cls()
         msgLog.addLog(entity1.name +" sees a weak point in "+entity2.name)
         if isinstance(entity1,Player):
             showBoth(entity1,entity2)
@@ -2118,7 +2120,7 @@ def strike(entity1,entity2,msgLog):
         #sleep(3)
         damage = critDmg * randint(int(low),int(high))
         entity2.health -= damage
-        os.system('cls')
+        cls()
         msgLog.addLog(entity1.name+" hits "+ entity2.name+ " for " +str(damage)\
             +" damage",True)
         if isinstance(entity1,Player):
@@ -2126,7 +2128,7 @@ def strike(entity1,entity2,msgLog):
         else:
             showBoth(entity2,entity1)
     else: 
-        os.system('cls')
+        cls()
         msgLog.addLog(entity1.name+" misses their target",True)
         if isinstance(entity1,Player):
             showBoth(entity1,entity2)
@@ -2156,7 +2158,7 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
     """
     battleEnd = False
     while not battleEnd:
-        os.system('cls')
+        cls()
         playerPresent = False
         showBoth(entity1,entity2)
         #prints stats and log if player is not dead
@@ -2213,7 +2215,7 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                     battleEnd = True
                     sleep(2)
             if winner:
-                os.system('cls')
+                cls()
                 who = ""
                 loser = ""
                 if entity1.health > entity2.health: 
@@ -2257,7 +2259,7 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                 battleEnd = True
                 msgLog.addLog(entity1.name + " ran away successfully... loser")
                 entity1.battlesFought += 1
-                os.system('cls')
+                cls()
                 showBoth(entity1,entity2)
                 if not entity1.hideStats:
                     print(entity1)
@@ -2265,7 +2267,7 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
             else:#This code below can be used in the other two options
                 msgLog.addLog(entity1.name + " tried to run away and failed")
                 if not strike(entity2,entity1,msgLog): #E2 didnt kill
-                    os.system('cls')
+                    cls()
                     showBoth(entity1,entity2)
                     if not entity1.hideStats:
                         print(entity1)
@@ -2279,7 +2281,7 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
             
         #Debugging and this check is needed to prevent msgLog spam
         if entity1.health > 0:
-            os.system('cls') 
+            cls() 
             print(msgLog)
     if entity2.health <= 0:
         generateLoot(entity1,msgLog,entity2)
