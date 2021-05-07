@@ -32,6 +32,17 @@ def test_enemyInit():
 
     storeEnemy = e1.montype
 
+    #here im making sure that the inventory is used.
+    inv = dg.Enemy()
+    storeInventory = inv.inventory
+
+    itemType = "Gloves"
+    rarity = "Ultra Rare"
+    montype = 2
+    attackVal = None
+    defenses = None
+    gear = dg.Gear(itemType, rarity, montype, attackVal, defenses)
+
 
     #alternative way of calculating monsterhealth
     other = factorial(montype1) * 5 + 100
@@ -54,6 +65,14 @@ def test_enemyInit():
     assert monster_num2 == e2.name
     assert monster_num3 == e2.name
     assert monster_num4 == e2.name
+    assert storeInventory == {"sword":{"equip":gear("Sword","Uncommon",\
+            storeEnemy),"unequip":[]},"armor":
+            {"equip":{"Helmet":None,
+                "Body Armor":None,
+                "Gloves": None,
+                "Boots":None,
+                "Ring":None,
+                "Amulet":None}}}
 
 
 
