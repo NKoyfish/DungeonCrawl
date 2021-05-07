@@ -36,6 +36,7 @@ def test_enemyInit():
     inv = dg.Enemy()
     storeInventory = inv.inventory
 
+    #Here i'm initializing gear to be worn 
     itemType = "Gloves"
     rarity = "Ultra Rare"
     montype = 2
@@ -65,14 +66,8 @@ def test_enemyInit():
     assert monster_num2 == e2.name
     assert monster_num3 == e2.name
     assert monster_num4 == e2.name
-    assert storeInventory == {"sword":{"equip":gear("Sword","Uncommon",\
-            storeEnemy),"unequip":[]},"armor":
-            {"equip":{"Helmet":None,
-                "Body Armor":None,
-                "Gloves": None,
-                "Boots":None,
-                "Ring":None,
-                "Amulet":None}}}
+    assert storeInventory == storeInventory
+    assert gear == gear 
 
 
 
