@@ -45,6 +45,18 @@ def test_enemyInit():
     gear = dg.Gear(itemType, rarity, montype, attackVal, defenses)
 
 
+    #player inventory
+    playerInv = dg.Enemy()
+    inventory = playerInv.inventory["armor"]["equip"]["Helmet"], playerInv.inventory["armor"]["equip"]["Boots"], \
+        playerInv.inventory["armor"]["equip"]["Gloves"], playerInv.inventory["armor"]["equip"]["Body Armor"], \
+            playerInv.inventory["sword"]["equip"]
+
+    #continue working on recalcAttack and recalcDefense
+    entity = "Nelson"
+    dg.recalcAttack(entity)
+
+
+
     #alternative way of calculating monsterhealth
     other = factorial(montype1) * 5 + 100
     other2 = factorial(montype2) * 5 + 100
@@ -68,6 +80,8 @@ def test_enemyInit():
     assert monster_num4 == e2.name
     assert storeInventory == storeInventory
     assert gear == gear 
+    assert inventory == inventory
+
 
 
 
