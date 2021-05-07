@@ -5,11 +5,6 @@ from random import randint
 from math import factorial
 
 
-#enemy _init_
-#typeofMonster = monsterType.choice[randint(0,7)]
-    #enemyType = dg.Enemy(typeofMonster)
-    #print(typeofMonster)
-    #enemyType = dg.Enemy(typeofMonster)
 def test_enemyInit():
     monsterType = random.choice([0,1,2,3,4])
     monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
@@ -24,6 +19,11 @@ def test_enemyInit():
     montype2 = 2
     montype3 = 3
     montype4 = 4
+
+    #making an enemy
+    e1 = dg.Enemy()
+    storeEnemy = e1.montype
+
 
     #alternative way of calculating monsterhealth
     other = factorial(montype1) * 5 + 100
@@ -41,4 +41,9 @@ def test_enemyInit():
     assert other2 == 110
     assert other3 == 130
     assert other4 == 220
+    assert storeEnemy == 1
+    assert storeEnemy == 2
+    assert storeEnemy == 3
+    assert storeEnemy == 4
+
 
