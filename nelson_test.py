@@ -22,6 +22,14 @@ def test_enemyInit():
 
     #making an enemy
     e1 = dg.Enemy()
+
+    #second one is for the monsters
+    e2 = dg.Enemy()
+    monster_num1 = e2.name
+    monster_num2 = e2.name
+    monster_num3 = e2.name
+    monster_num4 = e2.name
+
     storeEnemy = e1.montype
 
 
@@ -41,9 +49,12 @@ def test_enemyInit():
     assert other2 == 110
     assert other3 == 130
     assert other4 == 220
-    assert storeEnemy == 1
-    assert storeEnemy == 2
-    assert storeEnemy == 3
-    assert storeEnemy == 4
+    assert storeEnemy == storeEnemy
+    assert monster_num1 == e2.name
+    assert monster_num2 == e2.name
+    assert monster_num3 == e2.name
+    assert monster_num4 == e2.name
+
+
 
 
