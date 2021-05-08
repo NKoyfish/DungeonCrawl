@@ -149,6 +149,683 @@ class MessageLog():
             self.log.append(msg)
         if repeat:
             print(self)
+class Maze():
+    """
+    A Maze has a Start and an End represented by S and E respectively
+    The goal for a player in a maze is to get from S to E, battle enemies 
+    and get treasure represented by B and T respectively. Reveals tiles
+    the player has been near and may contain stairs that teleport the player.
+
+    __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
+                    'Noble Nwokoma'
+    Attributes:
+    tuplemaze (Dict):   a Dictionary of string keys
+                        representing a string casted tuple of row,col.
+                        Values are Cell Objects which contain tile data
+                        needed to determine eligible tile traversal
+    mazeStairs (Dict):  a Dictionary of single digit strings that have
+                        a tuple containing two tuples. These two tuples
+                        contain the location data of where a pair of stairs
+                        lead to and switch when the player walks up the stairs
+    modulePts (list):   A list of possible places to put a wall when generating
+                        a maze if no txt file was given. A random point will be
+                        selected and a wall in a random direction vertical 
+                        or horizontal will be made along the point.
+    currentTuple (tuple):a tuple containing the row and column of the curr loc
+    current (str):       the string casted version of currentTuple used 
+                            for easy dictionary retrieval
+    endTuple (str):     The string of a tuple value in tuplemaze with obsID = E
+    maxRow (int):       Total # of Cell rows in the maze used for iterating
+    maxCol (int):       Total # of Cell columns in the maze used for iterating        
+    """
+    WALL = "\033[1;4;37m"
+    def __init__(self,mazefile,player):
+        """
+        Initializes a new Maze object
+        __author__ = 'Nicholas Koy'
+        Args:    mazefile (str):    path to the maze to be read from
+                 player (Player):   Player currently running through the dungeon
+
+        Side effects: Creates a new Maze object
+        """
+        self.messageLog = []
+        self.mazeStairs = {}
+        self.tuplemaze = {}
+        self.modulePts = [] #attachment pts for generateSimpleMaze()
+        self.currentTuple = "not set"
+        self.current = "not set"
+        self.endTuple = "not set"
+        row = -1
+        col = 0
+        with open(mazefile,"r") as f:
+            for line in f.readlines():
+                col = 0
+                row +=1
+                for char in line: #get rid of newlines
+                    if char != "\n":
+                        strTuple = str((row,col))
+                        if char == "=":
+                            newCell = Cell(col,row,"=")
+                            self.tuplemaze[strTuple] = newCell
+                        elif char == "S":
+                            newCell = Cell(col,row,"S")
+                            newCell.playerthere = True
+                            self.tuplemaze[strTuple] = newCell
+                            self.currentTuple = (row,col)          
+                        elif char == "E":
+                            newCell = Cell(col,row,"E")
+                            self.tuplemaze[strTuple] = newCell
+                            self.endTuple = strTuple
+                        elif char == "T":
+                            newCell = Cell(col,row,"T")
+                            self.tuplemaze[strTuple] = newCell
+                        elif char == "B":
+                            newCell = Cell(col,row,"B")
+                            self.tuplemaze[strTuple] = newCell
+                        elif char == "/":
+                            newCell = Cell(col,row,"/")
+                            newCell.isInvisibleBorder = True
+                            self.tuplemaze[strTuple] = newCell
+                        elif char.isdigit(): #stairs
+                            newCell = Cell(col,row,char)
+                            newCell.obsID = char
+                            self.tuplemaze[strTuple] = newCell
+                            if char not in self.mazeStairs.keys():
+                                self.mazeStairs[char] = ((row,col),"")
+                                #first detection of a stair number 
+                            else:
+                                pos1,pos2 = self.mazeStairs[char]
+                                pos2 = (row,col)
+                                self.mazeStairs[char] = (pos1,pos2)
+                        else:
+                            newCell = Cell(col,row," ")
+                            self.tuplemaze[strTuple] = newCell
+                        col+=1
+                    else: 
+                        self.modulePts.append((row,col-1))
+                self.maxCol = col -1
+                self.maxRow = row
+                self.modulePts = [self.modulePts[0],\
+                    self.modulePts[len(self.modulePts)-1]]
+        self.revealSurround()
+        self.setBorders()
+    def visible(self,mode):
+        """
+        Changes wall color from white to black
+        or black to white
+        """
+        if mode == "light":
+            Maze.WALL = "\033[1;4;37m"
+        else:
+            Maze.WALL = "\033[1;4;30m"
+    def printMaze(self,player,msgLog: MessageLog(),boole = False):
+        """
+        prints the maze for the user to see current progress 
+        and traversal options if bool is True then reveal the entire maze 
+        (normally called after player death)
+
+        Will print out the menus before the maze if the player has them toggled
+        __author__ = 'Nicholas Koy'
+        Args: player (Player):  player participating in the maze
+              msgLog (MessageLog): prints past actions after maze
+              bool (Boolean):   Reveal entire maze if True
+
+        Side effects: prints to stdout
+        """
+        #print(self.modulePts)
+        if player.hideStats == False:
+            print(player)
+        if player.hideLog == False:
+            print(msgLog)
+        os.system('')
+        for r in range(self.maxRow+1):
+            if r >0:
+                print()
+            for c in range(self.maxCol+1):
+                name = "("+str(r)+", "+str(c)+")"
+                if name in self.tuplemaze.keys():
+                    if self.tuplemaze[name].playerthere:
+                        print("\033[1;92mP\033[0m",end ="")
+                    elif not boole:
+                        if self.tuplemaze[name].obsID == "B" and self.tuplemaze[name].revealed:
+                            print("\033[1;31m"+'B'+"\033[0m",end ="")
+                        elif self.tuplemaze[name].obsID == "=" and self.tuplemaze[name].revealed:
+                            print(Maze.WALL+'■'+"\033[0m",end ="")
+                        elif self.tuplemaze[name].obsID == "T" and self.tuplemaze[name].revealed:
+                            print("\033[1;33m"+str(self.tuplemaze[name])+"\033[0m",end ="")
+                        else:
+                            print(self.tuplemaze[name],end ="")
+                    else:print(self.tuplemaze[name].obsID,end ="")
+        print()
+    
+    def writeMaze(self,file):
+        """
+        Converts a Maze object back into a textfile. Used to append new rooms
+        __author__ = 'Nicholas Koy'
+        Parameters:
+                file: (str) name to the file to be created temporarily
+
+        Side Effects:
+                creates a new txt file in the current directory named file
+        """
+        with open(file,"w") as f:
+            maxrowcount = 0
+            print("max",self.maxRow)
+            while maxrowcount < self.maxRow+1:
+                for c in range(self.maxCol+1):
+                    strTup = "("+str(maxrowcount)+", "+str(c)+")"
+                    strTupplus = "("+str(maxrowcount)+", "+str(c+1)+")"
+                    if strTupplus in self.tuplemaze.keys():
+                        f.write(self.tuplemaze[strTup].obsID)
+                    else:
+                        f.write(self.tuplemaze[strTup].obsID)
+                        if c != self.maxCol+1:
+                            f.write("\n")
+                maxrowcount +=1
+            
+    def breakWall(self,player, msglog: MessageLog()):
+        """
+        breakWall allows a player to destroy a non bordering wall
+        that are in proximity to the player (1 Cell away).
+
+        __author__ = 'Nicholas Koy'
+
+        Args:   
+                direction (str) either "up", "down", "left", or "right"
+                player (Player) the player breaking the wall.
+                msglog (MessageLog): Where the action will be printed
+        
+        Side effects:   Breaks a non bordering wall in front of the player.
+                        Prints to standard out via msglog
+        """
+        row,col = self.currentTuple
+        choose = False
+        breakable = ["c"]
+        dirs = { "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+\
+        ", "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
+                 "right":"("+str(row)+", "+str(col+1)+")"}
+        if player.abilityList["break"] == 0:
+            for wallCheck in dirs:
+                if dirs[wallCheck] in self.tuplemaze.keys():
+                    if self.tuplemaze[dirs[wallCheck]].obsID == "=" and \
+                        not self.tuplemaze[dirs[wallCheck]].isBorder:
+                        breakable.append(wallCheck)
+            if len(breakable) > 1:
+                while not choose:
+                    print(breakable)
+                    choice = input("What wall would you like to break or 'c' to cancel\n")
+                    if choice == "c":
+                        break
+                    elif choice in breakable:
+                        self.tuplemaze[dirs[choice]].obsID = " "
+                        player.abilityList["break"] = 5
+                        choose = True
+                        msglog.addLog(player.name +" broke wall at "+\
+                            dirs[choice])
+                        print(msglog)
+            else: print("No wall to break")
+        else: print("Break on cooldown for",player.abilityList["break"],"turns")
+    #Ali
+    def generateTreasure(self,player,msgLog : MessageLog()):
+        """
+        Generates treasure for the player to add to their inventory
+        Treasure adds to their score and each treasure has a different score val
+
+        __author__ = 'Ali Iqbal', 'Nelson Contreras', and 'Nicholas Koy'
+
+        Args:
+                player (Player)    : player picking up treasure
+                msgLog (MessageLog): Event logger
+        
+        Side effects:   adds key or changes key values in player.inventory
+                        prints to stdout via msglog
+        """
+        treasureRoll = randint(0,100)
+        addItem = ""
+        quantRoll = random.choice([1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,4,5,5,10])
+        if treasureRoll >= 95 and treasureRoll <= 100:
+            addItem = "Diamond"
+        elif treasureRoll >= 80 and treasureRoll < 95:
+            addItem = "Gold"
+        elif treasureRoll >= 60 and treasureRoll < 80:
+            addItem = "Emerald"
+        elif treasureRoll >= 50 and treasureRoll < 60:
+            addItem = "Silver"
+        elif treasureRoll >= 35 and treasureRoll < 50:
+            addItem = "Bronze"
+        elif treasureRoll >= 20 and treasureRoll < 35:
+            addItem = "Copper"
+        elif treasureRoll >= 10 and treasureRoll < 20:
+            addItem = "Amber"
+        else:
+            addItem = "Nugget"
+        if addItem in ["Diamond","Emerald"]:
+            piece = "gem"
+        elif addItem in ["Silver", "Bronze","Copper"]:
+            piece = "ore"
+        else:
+            piece = "piece"
+        if quantRoll > 1:
+            msgLog.addLog(player.name + " picked up " + str(quantRoll) + " "+\
+                str(addItem) + " " + str(piece) +"s")
+        else:
+            msgLog.addLog(player.name + " picked up one " + str(addItem) +\
+               " " +  str(piece))
+        if addItem not in player.inventory.keys():
+            player.inventory[addItem] = quantRoll
+        else:
+            player.inventory[addItem] += quantRoll
+    #Noble
+    def revealMap(self,player):
+        """
+        This reveals the game map if it is in the players inventory
+        __author__ = 'Noble Nwokoma'
+        Args:
+            player(Player): The player in the game
+        Side effects: Makes the map entire layout visible and reveals treasure
+        """
+        if player.inventory["map"] == 1:
+            for cell in self.tuplemaze.keys():
+                self.tuplemaze[cell].revealed = True
+    #Noble
+    def jumpWall(self, player,msgLog : MessageLog()):
+        """
+        this enables players who have the ability to jump over walls in the
+        maze to be able to do so
+
+        __author__ = 'Noble Nwokoma'
+        Args:
+            player(String): The name of the player in the game
+            it will evaluate the player and see if they have the ability to do
+             so and if they can to execute, if not then the the code will break
+        """
+        row,col = self.currentTuple
+        choose = False
+        jumpable = ["c"]
+        dirs = { "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+\
+        ", "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
+                 "right":"("+str(row)+", "+str(col+1)+")"}
+        dirs2 = { "up":"("+str(row-2)+", "+str(col)+")","down":"("+str(row+2)+\
+        ", "+str(col)+")","left":"("+str(row)+", "+str(col-2)+")",\
+                 "right":"("+str(row)+", "+str(col+2)+")"}
+        if player.abilityList["jump"] == 0:
+            for jumpCheck in dirs: #check if a wall exists nearby
+                if dirs[jumpCheck] in self.tuplemaze.keys():
+                    if self.tuplemaze[dirs[jumpCheck]].obsID == "=" and \
+                    (dirs2[jumpCheck] in self.tuplemaze.keys()) and \
+                    self.tuplemaze[dirs2[jumpCheck]].obsID not in ["=","/"]:
+                        jumpable.append(jumpCheck)
+            if len(jumpable) > 1:
+                while not choose:
+                    cls()
+                    strjump = ""
+                    for direc in jumpable:
+                        strjump += (direc + " ")
+                    strjump = strjump.strip()
+                    strjump = strjump.replace(" ",', ')
+                    print("Options:",strjump)
+                    choice = input("Which wall do you want to jump? Or 'c' to"+\
+                    " cancel\n")
+                    if choice == "c":
+                        break
+                    elif choice in jumpable:
+                        self.tuplemaze[str(self.currentTuple)].playerthere=False
+                        newPos = dirs2[choice]
+                        newPos2 = newPos
+                        newPos = newPos.replace("(","")
+                        newPos = newPos.replace(")","") 
+                        newRow = int(newPos.split(", ") [0])
+                        newCol = int(newPos.split(", ") [1])
+                        self.tuplemaze[newPos2].playerthere=True 
+                        self.tuplemaze[newPos2].revealed=True 
+                        self.currentTuple = newRow, newCol
+                        player.abilityList["jump"] = 5
+                        msgLog.addLog(player.name +" jumped over a wall")
+                        choose = True
+            else:
+                msgLog.addLog("There is no wall to jump over")
+        else:
+            j = "jump"
+            msgLog.addLog("Jump is still on cooldown for "+\
+                str(player.abilityList[j]) +  "turns")
+    #Nick 
+    def move(self,player,msglog,DEBUG = False):
+        """
+        A players "turn" in a maze. Here they can decide to either move, rest,
+        or perform a skill.
+
+        __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
+                        'Noble Nwokoma'
+
+        Args:
+                player: (Player) the player about to perform an action.
+        Side effects:   Prints to stdout and changes attributes such as
+                        player health and hunger. Maze revealed via
+                        revealSurround()
+        """
+        if player.shortCom:
+            ask = "\n(U),(D),(L),(R),(Rest),(B),(J),(Use),(P)" +\
+                "(stats),(short),(logs)\n"
+        else: ask = "\nMove where? (U)p,(D)own,(L)eft, or (R)ight\n" +\
+        "Other: (Rest), (B)reak Wall, (J)ump Wall, (use) item, or (P)osition" +\
+        "\nShow (Inventory),(equip) gear \n" +\
+        "Toggles: player(stats),(short) commands,(dark),(light) or see (logs)\n"
+
+        resp = input(ask)
+        moved = False
+        torchOn = False
+        msgWait = False
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        resp = resp.lower()
+        if resp == "dark" or resp == "light":
+            self.visible(resp)
+        if resp == "stats":
+            player.hideStats = not player.hideStats
+        elif resp == "logs":
+            player.hideLog = not player.hideLog
+        elif DEBUG and resp == "spawnloot":
+            temp = Gear("Sword","Legendary",5)
+            msglog.addLog(temp.name)
+            print(temp.name)
+            player.addInventoryWearable(temp)
+            print(msglog)
+        #DONT GRADE THIS ELIF
+        elif DEBUG and resp == "combatplus":
+            lv = int(input("what level?\n"))
+            e1 = Enemy()
+            e1.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
+            e1.inventory["armor"]["equip"]["Boots"] = Gear("Boots","Rare",lv)
+            e1.inventory["armor"]["equip"]["Gloves"] = Gear("Helmet","Rare",lv)
+            e1.inventory["armor"]["equip"]["Body Armor"] = Gear("Helmet","Rare",lv)
+            e1.inventory["sword"]["equip"] = Gear("Sword","Rare",lv)
+            player.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
+            player.inventory["armor"]["equip"]["Boots"] = Gear("Boots","Rare",lv)
+            player.inventory["armor"]["equip"]["Gloves"] = Gear("Helmet","Rare",lv)
+            player.inventory["armor"]["equip"]["Body Armor"] = Gear("Helmet","Rare",lv)
+            player.inventory["sword"]["equip"] = Gear("Sword","Rare",lv)
+            recalcDefense(e1)
+            recalcDefense(player)
+            recalcAttack(e1)
+            recalcAttack(player)
+            #print(e1.gearDefense)
+            #print(player.gearDefense)
+            print(e1.gearOffense)
+            print(player.gearOffense)
+            while( input()!='c'):
+                print(calcDamage(player,e1))
+                print("att",player.gearOffense)
+                print("def",player.gearDefense)
+                print("enemy")
+                print("att",e1.gearOffense)
+                print("def",e1.gearDefense)
+            sleep(4)
+        elif DEBUG and resp == "armor":
+            lv = int(input("up to what level?\n"))
+            rarity = ["Ultra Rare","Legendary","Common","Uncommon","Rare"]
+            
+            player.addInventoryWearable(Gear("Helmet",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Gear("Boots",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Gear("Gloves",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Gear("Body Armor",random.choice(rarity),randint(0,lv)))
+            player.addInventoryWearable(Gear("Sword",random.choice(rarity),randint(0,lv)))
+            #recalcDefense(player)
+            #recalcAttack(player)
+        #Okay you can look now
+        elif resp == "inventory":
+            lookup = input("Gear or Items?\n").lower()
+            if lookup == "gear":
+                player.showInventory()
+                sleep(3)
+            elif lookup == "items":
+                for item in player.inventory.keys():
+                    if item != "sword" and item != "armor":
+                        print(item,":",player.inventory[item])
+                sleep(4)
+        elif resp == "short":
+            player.shortCom = not player.shortCom
+        elif resp == "use":
+            item = input("What item are you using?\n")
+            player.useItem(item,msglog,self)
+        elif resp == "equip":
+            player.equipGear(msglog)
+        elif resp == "unequip":
+            gearSlot = input("Which item to unequip")
+            player.unequipGear(gearSlot,msglog)
+        elif resp in ["u","up"]:
+            self.moveUp(player,msglog,DEBUG)
+            moved = True
+        elif resp in ["d","down"]:
+            self.moveDown(player,msglog,DEBUG)
+            moved = True
+        elif resp in ["l","left"]:
+            moved = True
+            self.moveLeft(player,msglog,DEBUG)
+        elif resp in ["right","r"]:
+            moved = True
+            self.moveRight(player,msglog,DEBUG)
+        elif resp == "j": #jumpWall
+            self.jumpWall(player,msglog)
+            moved = True
+        elif resp == "b": #breakWall
+            self.breakWall(player,msglog)
+        elif resp == "p": # used primarily for debugging
+            msglog.addLog("You check your surroundings, you are at "+\
+                str(self.currentTuple))
+        elif resp == "rest":
+            if player.hunger > 10:
+                player.health += round(player.maxhealth/10)
+                if player.health > player.maxhealth:
+                    player.health = player.maxhealth
+                player.hunger -= 10
+                msglog.addLog("You take a short rest",True)
+                for ability in player.abilityList.keys():
+                    if player.abilityList[ability] > 0:
+                        player.abilityList[ability] -= 5
+                    if player.abilityList[ability] < 0:
+                        player.abilityList[ability] = 0
+        else: 
+            msglog.addLog("Invalid Action")
+            msgWait = True
+        if moved: #reduce hunger or health and cooldowns
+            self.afterMove(player,msglog,DEBUG)
+        if(msgWait):
+            sleep(.3)
+    def moveUp(self,player,msglog,DEBUG = False):
+        """
+        Moves the player up if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row-1)+", "+str(col)+")"
+        if tupNewUp in self.tuplemaze.keys() and \
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row-1,col)
+            self.tuplemaze[tupNewUp].playerthere = True
+        else: msglog.addLog("A wall obstructs you")
+    def moveDown(self,player,msglog,DEBUG = False):
+        """
+        Moves the player down if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row+1)+", "+str(col)+")"
+        if tupNewUp in self.tuplemaze.keys() and \
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row+1,col)
+            self.tuplemaze[tupNewUp].playerthere = True
+            moved = True
+        else: msglog.addLog("A wall obstructs you")
+    def moveLeft(self,player,msglog,DEBUG = False):
+        """
+        Moves the player left if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row)+", "+str(col-1)+")"
+        if tupNewUp in self.tuplemaze.keys() and\
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row,col-1)
+            self.tuplemaze[tupNewUp].playerthere = True
+            moved = True
+        else: msglog.addLog("A wall obstructs you")
+    def moveRight(self,player,msglog,DEBUG = False):
+        """
+        Moves the player right if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row)+", "+str(col+1)+")"
+        if tupNewUp in self.tuplemaze.keys() and\
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row,col+1)
+            self.tuplemaze[tupNewUp].playerthere = True
+            moved = True
+        else: msglog.addLog("A wall obstructs you")
+    def afterMove(self,player,msglog,DEBUG = False):
+        """
+        Checks the new tile the player has moved to.
+        DONT COUNT TOWARDS 8 UNIQUE METHODS
+        MAINLY FOR PYTEST EASY TESTING
+        """
+        for ability in player.abilityList.keys():
+            if player.abilityList[ability] > 0:
+                player.abilityList[ability] -= 1
+        if player.hunger > 0:
+            player.hunger -= 1
+        else: player.health -=1
+        if player.torchLeft > 0:
+            torchOn = True
+            player.torchLeft -= 1
+        else:
+            torchOn = False
+        if player.health == 0: #death check
+            msglog.addLog(player.name," has died of starvation")
+        if player.health > 0 and \
+            self.tuplemaze[str(self.currentTuple)].obsID == "T":
+
+            self.generateTreasure(player,msglog)
+            self.tuplemaze[str(self.currentTuple)].obsID = " "
+        #stair check
+        if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():
+            msglog.addLog(player.name+" took the stairs")
+            print(self.tuplemaze[str(self.currentTuple)].playerthere)
+            self.revealSurround(torchOn) 
+            #Have to reveal surrounding area before moving somewhere new
+            pos1,pos2 = self.mazeStairs\
+                [self.tuplemaze[str(self.currentTuple)].obsID]
+            self.tuplemaze[str(self.currentTuple)].playerthere = False
+            if self.currentTuple == pos1:
+                self.currentTuple = pos2
+            else:
+                self.currentTuple = pos1
+            self.tuplemaze[str(self.currentTuple)].playerthere = True
+            self.tuplemaze[str(self.currentTuple)].revealed = True
+        #battle check
+        if player.health > 0 and \
+            self.tuplemaze[str(self.currentTuple)].obsID == "B":
+            self.tuplemaze[str(self.currentTuple)].obsID = " "
+            enemyGen = Enemy()
+            msglog.addLog(player.name+" encountered a " + enemyGen.name)
+            cls()
+            print(msglog)
+            sleep(1.3)
+            battle_monsters(player, enemyGen,msglog)
+        self.revealSurround(torchOn) 
+    def setBorders(self):
+        """
+        Sets border attribute for cells in proximity to the edge / void
+
+        __authors__ =  'Nicholas Koy'
+
+        Side effect: Sets isBorder attr of certain Cells in tuplemaze dict
+        """
+        #print([self.tuplemaze[cell].obsID for cell in self.tuplemaze.keys()])
+        for cell in self.tuplemaze.keys():
+            cellKey = cell
+            cell = cell.replace("(","")
+            cell = cell.replace(")","")
+            row = int(cell.split(", ") [0])
+            col =  int(cell.split(", ") [1])
+            #print(row,col)
+            dirs = { "up":"("+str(row-1)+", "+str(col)+")",\
+                "down":"("+str(row+1)+", "+str(col)+")",\
+                "left":"("+str(row)+", "+str(col-1)+")",\
+                "right":"("+str(row)+", "+str(col+1)+")"}
+
+            for dire in dirs.keys():
+                if dirs[dire] not in self.tuplemaze.keys() or\
+                self.tuplemaze[dirs[dire]].obsID == "/":
+                    self.tuplemaze[cellKey].isBorder = True
+    def getBorder(self):
+        """
+        __authors__ = 'Nicholas Koy'
+        Gets a list of all cells that are borders
+
+        Returns: list of strings of cell keys from tuplemaze
+        """
+        borderList = []
+        for cell in self.tuplemaze.keys():
+            if self.tuplemaze[cell].isBorder:
+                borderList.append(cell)
+        return borderList
+
+    def revealSurround(self,torch = False):
+        """
+        Reveals the surrounding maze area (one cell away from the player 
+        and two if the player has a torch)
+
+        __authors__ =   'Ali Iqbal', and 'Nicholas Koy'
+
+        Side effect: changes self.revealed to True if player in proximity.
+        """
+        row,col = self.currentTuple
+        dirs ={ "up":"("+str(row-1)+", "+str(col)+")",\
+                "down":"("+str(row+1)+", "+str(col)+")",
+                "left":"("+str(row)+", "+str(col-1)+")", \
+                "right":"("+str(row)+", "+str(col+1)+")",\
+                "upl":"("+str(row-1)+", "+str(col-1)+")",
+                "downl":"("+str(row+1)+", "+str(col-1)+")",\
+                "upR":"("+str(row-1)+", "+str(col+1)+")",\
+                "downR":"("+str(row+1)+", "+str(col+1)+")"}
+        torchDirs = { 
+            "up":"("+str(row-2)+", "+str(col)+")",\
+            "down":"("+str(row+2)+", "+str(col)+")",
+            "left":"("+str(row)+", "+str(col-2)+")", \
+            "right":"("+str(row)+", "+str(col+2)+")"
+            }   
+        #currently only reveals one tile, 2 to be added soon        
+        for key in dirs.keys():
+            if dirs[key] in self.tuplemaze.keys():
+                self.tuplemaze[dirs[key]].revealed = True
+        if torch:
+            for key in torchDirs.keys():
+                if torchDirs[key] in self.tuplemaze.keys():
+                    self.tuplemaze[torchDirs[key]].revealed = True
 class Cell:
     """
     A Cell makes up a Maze Object. The most basic Cells are walls and open
@@ -261,12 +938,12 @@ class Player:
         startingSword = Gear("Sword","Common",1)
         if startingSword.attackVal[0] < 5: startingSword.attackVal[0] = 5
         
-        self.inventory = {"map": 0, "sword": {"equip": startingSword, \
+        self.inventory = {"map": 1, "sword": {"equip": startingSword, \
             "unequip": [] },
         "armor" : {"equip": {"Helmet": None,"Body Armor":None,
                 "Boots":None,"Ring":None,"Amulet":None,"Gloves":None}, \
                 "unequip": []}, 
-        "small core": 0, "medium core":0, "large core": 0, "torch": 1,
+        "small core": 0, "medium core":1, "large core": 0, "torch": 1,
         "bandage":1}
         self.abilityList = {"break": 0, "jump": 0}
         self.name = name
@@ -358,7 +1035,7 @@ class Player:
                 row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+" ▯\n"
                 printFrame += row 
         return (printFrame)
-    
+    #Ali
     def getScore(self):
         """
         __author__ = 'Ali Iqbal'
@@ -419,7 +1096,7 @@ class Player:
                     if self.health > self.maxhealth:
                         self.health = self.maxhealth
                 else:
-                    maze.revealMap()
+                    maze.revealMap(self)
                 self.inventory[item] -= 1
             else:
                 msgLog.addLog("You have no more to use")
@@ -798,683 +1475,6 @@ class Gear():
             str(sumAttack) + "\nDefenses " +str(self.defenses) +":"+str(sumDef))            
     def __str__(self):
         return self.name
-class Maze():
-    """
-    A Maze has a Start and an End represented by S and E respectively
-    The goal for a player in a maze is to get from S to E, battle enemies 
-    and get treasure represented by B and T respectively. Reveals tiles
-    the player has been near and may contain stairs that teleport the player.
-
-    __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
-                    'Noble Nwokoma'
-    Attributes:
-    tuplemaze (Dict):   a Dictionary of string keys
-                        representing a string casted tuple of row,col.
-                        Values are Cell Objects which contain tile data
-                        needed to determine eligible tile traversal
-    mazeStairs (Dict):  a Dictionary of single digit strings that have
-                        a tuple containing two tuples. These two tuples
-                        contain the location data of where a pair of stairs
-                        lead to and switch when the player walks up the stairs
-    modulePts (list):   A list of possible places to put a wall when generating
-                        a maze if no txt file was given. A random point will be
-                        selected and a wall in a random direction vertical 
-                        or horizontal will be made along the point.
-    currentTuple (tuple):a tuple containing the row and column of the curr loc
-    current (str):       the string casted version of currentTuple used 
-                            for easy dictionary retrieval
-    endTuple (str):     The string of a tuple value in tuplemaze with obsID = E
-    maxRow (int):       Total # of Cell rows in the maze used for iterating
-    maxCol (int):       Total # of Cell columns in the maze used for iterating        
-    """
-    WALL = "\033[1;4;37m"
-    def __init__(self,mazefile,player):
-        """
-        Initializes a new Maze object
-        __author__ = 'Nicholas Koy'
-        Args:    mazefile (str):    path to the maze to be read from
-                 player (Player):   Player currently running through the dungeon
-
-        Side effects: Creates a new Maze object
-        """
-        self.messageLog = []
-        self.mazeStairs = {}
-        self.tuplemaze = {}
-        self.modulePts = [] #attachment pts for generateSimpleMaze()
-        self.currentTuple = "not set"
-        self.current = "not set"
-        self.endTuple = "not set"
-        row = -1
-        col = 0
-        with open(mazefile,"r") as f:
-            for line in f.readlines():
-                col = 0
-                row +=1
-                for char in line: #get rid of newlines
-                    if char != "\n":
-                        strTuple = str((row,col))
-                        if char == "=":
-                            newCell = Cell(col,row,"=")
-                            self.tuplemaze[strTuple] = newCell
-                        elif char == "S":
-                            newCell = Cell(col,row,"S")
-                            newCell.playerthere = True
-                            self.tuplemaze[strTuple] = newCell
-                            self.currentTuple = (row,col)          
-                        elif char == "E":
-                            newCell = Cell(col,row,"E")
-                            self.tuplemaze[strTuple] = newCell
-                            self.endTuple = strTuple
-                        elif char == "T":
-                            newCell = Cell(col,row,"T")
-                            self.tuplemaze[strTuple] = newCell
-                        elif char == "B":
-                            newCell = Cell(col,row,"B")
-                            self.tuplemaze[strTuple] = newCell
-                        elif char == "/":
-                            newCell = Cell(col,row,"/")
-                            newCell.isInvisibleBorder = True
-                            self.tuplemaze[strTuple] = newCell
-                        elif char.isdigit(): #stairs
-                            newCell = Cell(col,row,char)
-                            newCell.obsID = char
-                            self.tuplemaze[strTuple] = newCell
-                            if char not in self.mazeStairs.keys():
-                                self.mazeStairs[char] = ((row,col),"")
-                                #first detection of a stair number 
-                            else:
-                                pos1,pos2 = self.mazeStairs[char]
-                                pos2 = (row,col)
-                                self.mazeStairs[char] = (pos1,pos2)
-                        else:
-                            newCell = Cell(col,row," ")
-                            self.tuplemaze[strTuple] = newCell
-                        col+=1
-                    else: 
-                        self.modulePts.append((row,col-1))
-                self.maxCol = col -1
-                self.maxRow = row
-                self.modulePts = [self.modulePts[0],\
-                    self.modulePts[len(self.modulePts)-1]]
-        self.revealSurround()
-        self.setBorders()
-    def visible(self,mode):
-        """
-        Changes wall color from white to black
-        or black to white
-        """
-        if mode == "light":
-            Maze.WALL = "\033[1;4;37m"
-        else:
-            Maze.WALL = "\033[1;4;30m"
-    def printMaze(self,player,msgLog: MessageLog(),boole = False):
-        """
-        prints the maze for the user to see current progress 
-        and traversal options if bool is True then reveal the entire maze 
-        (normally called after player death)
-
-        Will print out the menus before the maze if the player has them toggled
-        __author__ = 'Nicholas Koy'
-        Args: player (Player):  player participating in the maze
-              msgLog (MessageLog): prints past actions after maze
-              bool (Boolean):   Reveal entire maze if True
-
-        Side effects: prints to stdout
-        """
-        #print(self.modulePts)
-        if player.hideStats == False:
-            print(player)
-        if player.hideLog == False:
-            print(msgLog)
-        os.system('')
-        for r in range(self.maxRow+1):
-            if r >0:
-                print()
-            for c in range(self.maxCol+1):
-                name = "("+str(r)+", "+str(c)+")"
-                if name in self.tuplemaze.keys():
-                    if self.tuplemaze[name].playerthere:
-                        print("\033[1;92mP\033[0m",end ="")
-                    elif not boole:
-                        if self.tuplemaze[name].obsID == "B" and self.tuplemaze[name].revealed:
-                            print("\033[1;31m"+'B'+"\033[0m",end ="")
-                        elif self.tuplemaze[name].obsID == "=" and self.tuplemaze[name].revealed:
-                            print(Maze.WALL+'■'+"\033[0m",end ="")
-                        elif self.tuplemaze[name].obsID == "T" and self.tuplemaze[name].revealed:
-                            print("\033[1;33m"+str(self.tuplemaze[name])+"\033[0m",end ="")
-                        else:
-                            print(self.tuplemaze[name],end ="")
-                    else:print(self.tuplemaze[name].obsID,end ="")
-        print()
-    
-    def writeMaze(self,file):
-        """
-        Converts a Maze object back into a textfile. Used to append new rooms
-        __author__ = 'Nicholas Koy'
-        Parameters:
-                file: (str) name to the file to be created temporarily
-
-        Side Effects:
-                creates a new txt file in the current directory named file
-        """
-        with open(file,"w") as f:
-            maxrowcount = 0
-            print("max",self.maxRow)
-            while maxrowcount < self.maxRow+1:
-                for c in range(self.maxCol+1):
-                    strTup = "("+str(maxrowcount)+", "+str(c)+")"
-                    strTupplus = "("+str(maxrowcount)+", "+str(c+1)+")"
-                    if strTupplus in self.tuplemaze.keys():
-                        f.write(self.tuplemaze[strTup].obsID)
-                    else:
-                        f.write(self.tuplemaze[strTup].obsID)
-                        if c != self.maxCol+1:
-                            f.write("\n")
-                maxrowcount +=1
-            
-    def breakWall(self,player, msglog: MessageLog()):
-        """
-        breakWall allows a player to destroy a non bordering wall
-        that are in proximity to the player (1 Cell away).
-
-        __author__ = 'Nicholas Koy'
-
-        Args:   
-                direction (str) either "up", "down", "left", or "right"
-                player (Player) the player breaking the wall.
-                msglog (MessageLog): Where the action will be printed
-        
-        Side effects:   Breaks a non bordering wall in front of the player.
-                        Prints to standard out via msglog
-        """
-        row,col = self.currentTuple
-        choose = False
-        breakable = ["c"]
-        dirs = { "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+\
-        ", "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
-                 "right":"("+str(row)+", "+str(col+1)+")"}
-        if player.abilityList["break"] == 0:
-            for wallCheck in dirs:
-                if dirs[wallCheck] in self.tuplemaze.keys():
-                    if self.tuplemaze[dirs[wallCheck]].obsID == "=" and \
-                        not self.tuplemaze[dirs[wallCheck]].isBorder:
-                        breakable.append(wallCheck)
-            if len(breakable) > 1:
-                while not choose:
-                    print(breakable)
-                    choice = input("What wall would you like to break or 'c' to cancel\n")
-                    if choice == "c":
-                        break
-                    elif choice in breakable:
-                        self.tuplemaze[dirs[choice]].obsID = " "
-                        player.abilityList["break"] = 5
-                        choose = True
-                        msglog.addLog(player.name +" broke wall at "+\
-                            dirs[choice])
-                        print(msglog)
-            else: print("No wall to break")
-        else: print("Break on cooldown for",player.abilityList["break"],"turns")
-    
-    def generateTreasure(self,player,msgLog : MessageLog()):
-        """
-        Generates treasure for the player to add to their inventory
-        Treasure adds to their score and each treasure has a different score val
-
-        __author__ = 'Ali Iqbal', 'Nelson Contreras', and 'Nicholas Koy'
-
-        Args:
-                player (Player)    : player picking up treasure
-                msgLog (MessageLog): Event logger
-        
-        Side effects:   adds key or changes key values in player.inventory
-                        prints to stdout via msglog
-        """
-        treasureRoll = randint(0,100)
-        addItem = ""
-        quantRoll = random.choice([1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,4,5,5,10])
-        if treasureRoll >= 95 and treasureRoll <= 100:
-            addItem = "Diamond"
-        elif treasureRoll >= 80 and treasureRoll < 95:
-            addItem = "Gold"
-        elif treasureRoll >= 60 and treasureRoll < 80:
-            addItem = "Emerald"
-        elif treasureRoll >= 50 and treasureRoll < 60:
-            addItem = "Silver"
-        elif treasureRoll >= 35 and treasureRoll < 50:
-            addItem = "Bronze"
-        elif treasureRoll >= 20 and treasureRoll < 35:
-            addItem = "Copper"
-        elif treasureRoll >= 10 and treasureRoll < 20:
-            addItem = "Amber"
-        else:
-            addItem = "Nugget"
-        if addItem in ["Diamond","Emerald"]:
-            piece = "gem"
-        elif addItem in ["Silver", "Bronze","Copper"]:
-            piece = "ore"
-        else:
-            piece = "piece"
-        if quantRoll > 1:
-            msgLog.addLog(player.name + " picked up " + str(quantRoll) + " "+\
-                str(addItem) + " " + str(piece) +"s")
-        else:
-            msgLog.addLog(player.name + " picked up one " + str(addItem) +\
-               " " +  str(piece))
-        if addItem not in player.inventory.keys():
-            player.inventory[addItem] = quantRoll
-        else:
-            player.inventory[addItem] += quantRoll
-
-    def revealMap(self,player):
-        """
-        This reveals the game map if it is in the players inventory
-        __author__ = 'Noble Nwokoma'
-        Args:
-            player(Player): The player in the game
-        Side effects: Makes the map entire layout visible and reveals treasure
-        """
-        if player.inventory["map"] == 1:
-            for cell in self.tuplemaze.keys():
-                self.tuplemaze[cell].revealed = True
-
-    def jumpWall(self, player,msgLog : MessageLog()):
-        """
-        this enables players who have the ability to jump over walls in the
-        maze to be able to do so
-
-        __author__ = 'Noble Nwokoma'
-        Args:
-            player(String): The name of the player in the game
-            it will evaluate the player and see if they have the ability to do
-             so and if they can to execute, if not then the the code will break
-        """
-        row,col = self.currentTuple
-        choose = False
-        jumpable = ["c"]
-        dirs = { "up":"("+str(row-1)+", "+str(col)+")","down":"("+str(row+1)+\
-        ", "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
-                 "right":"("+str(row)+", "+str(col+1)+")"}
-        dirs2 = { "up":"("+str(row-2)+", "+str(col)+")","down":"("+str(row+2)+\
-        ", "+str(col)+")","left":"("+str(row)+", "+str(col-2)+")",\
-                 "right":"("+str(row)+", "+str(col+2)+")"}
-        if player.abilityList["jump"] == 0:
-            for jumpCheck in dirs: #check if a wall exists nearby
-                if dirs[jumpCheck] in self.tuplemaze.keys():
-                    if self.tuplemaze[dirs[jumpCheck]].obsID == "=" and \
-                    (dirs2[jumpCheck] in self.tuplemaze.keys()) and \
-                    self.tuplemaze[dirs2[jumpCheck]].obsID not in ["=","/"]:
-                        jumpable.append(jumpCheck)
-            if len(jumpable) > 1:
-                while not choose:
-                    cls()
-                    strjump = ""
-                    for direc in jumpable:
-                        strjump += (direc + " ")
-                    strjump = strjump.strip()
-                    strjump = strjump.replace(" ",', ')
-                    print("Options:",strjump)
-                    choice = input("Which wall do you want to jump? Or 'c' to"+\
-                    " cancel\n")
-                    if choice == "c":
-                        break
-                    elif choice in jumpable:
-                        self.tuplemaze[str(self.currentTuple)].playerthere=False
-                        newPos = dirs2[choice]
-                        newPos2 = newPos
-                        newPos = newPos.replace("(","")
-                        newPos = newPos.replace(")","") 
-                        newRow = int(newPos.split(", ") [0])
-                        newCol = int(newPos.split(", ") [1])
-                        self.tuplemaze[newPos2].playerthere=True 
-                        self.tuplemaze[newPos2].revealed=True 
-                        self.currentTuple = newRow, newCol
-                        player.abilityList["jump"] = 5
-                        msgLog.addLog(player.name +" jumped over a wall")
-                        choose = True
-            else:
-                msgLog.addLog("There is no wall to jump over")
-        else:
-            j = "jump"
-            msgLog.addLog("Jump is still on cooldown for "+\
-                str(player.abilityList[j]) +  "turns")
-     
-    def move(self,player,msglog,DEBUG = False):
-        """
-        A players "turn" in a maze. Here they can decide to either move, rest,
-        or perform a skill.
-
-        __authors__ =   'Ali Iqbal', 'Nelson Contreras', 'Nicholas Koy', and
-                        'Noble Nwokoma'
-
-        Args:
-                player: (Player) the player about to perform an action.
-        Side effects:   Prints to stdout and changes attributes such as
-                        player health and hunger. Maze revealed via
-                        revealSurround()
-        """
-        if player.shortCom:
-            ask = "\n(U),(D),(L),(R),(Rest),(B),(J),(Use),(P)" +\
-                "(stats),(short),(logs)\n"
-        else: ask = "\nMove where? (U)p,(D)own,(L)eft, or (R)ight\n" +\
-        "Other: (Rest), (B)reak Wall, (J)ump Wall, (use) item, or (P)osition" +\
-        "\nShow (Inventory),(equip) gear \n" +\
-        "Toggles: player(stats),(short) commands,(dark),(light) or see (logs)\n"
-
-        resp = input(ask)
-        moved = False
-        torchOn = False
-        msgWait = False
-        tupUp = self.currentTuple #THIS IS NOT A STRING YET
-        row,col = tupUp
-        resp = resp.lower()
-        if resp == "dark" or resp == "light":
-            self.visible(resp)
-        if resp == "stats":
-            player.hideStats = not player.hideStats
-        elif resp == "logs":
-            player.hideLog = not player.hideLog
-        elif DEBUG and resp == "spawnloot":
-            temp = Gear("Sword","Legendary",5)
-            msglog.addLog(temp.name)
-            print(temp.name)
-            player.addInventoryWearable(temp)
-            print(msglog)
-        #DONT GRADE THIS ELIF
-        elif DEBUG and resp == "combatplus":
-            lv = int(input("what level?\n"))
-            e1 = Enemy()
-            e1.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
-            e1.inventory["armor"]["equip"]["Boots"] = Gear("Boots","Rare",lv)
-            e1.inventory["armor"]["equip"]["Gloves"] = Gear("Helmet","Rare",lv)
-            e1.inventory["armor"]["equip"]["Body Armor"] = Gear("Helmet","Rare",lv)
-            e1.inventory["sword"]["equip"] = Gear("Sword","Rare",lv)
-            player.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
-            player.inventory["armor"]["equip"]["Boots"] = Gear("Boots","Rare",lv)
-            player.inventory["armor"]["equip"]["Gloves"] = Gear("Helmet","Rare",lv)
-            player.inventory["armor"]["equip"]["Body Armor"] = Gear("Helmet","Rare",lv)
-            player.inventory["sword"]["equip"] = Gear("Sword","Rare",lv)
-            recalcDefense(e1)
-            recalcDefense(player)
-            recalcAttack(e1)
-            recalcAttack(player)
-            #print(e1.gearDefense)
-            #print(player.gearDefense)
-            print(e1.gearOffense)
-            print(player.gearOffense)
-            while( input()!='c'):
-                print(calcDamage(player,e1))
-                print("att",player.gearOffense)
-                print("def",player.gearDefense)
-                print("enemy")
-                print("att",e1.gearOffense)
-                print("def",e1.gearDefense)
-            sleep(4)
-        elif DEBUG and resp == "armor":
-            lv = int(input("up to what level?\n"))
-            rarity = ["Ultra Rare","Legendary","Common","Uncommon","Rare"]
-            
-            player.addInventoryWearable(Gear("Helmet",random.choice(rarity),randint(0,lv)))
-            player.addInventoryWearable(Gear("Boots",random.choice(rarity),randint(0,lv)))
-            player.addInventoryWearable(Gear("Gloves",random.choice(rarity),randint(0,lv)))
-            player.addInventoryWearable(Gear("Body Armor",random.choice(rarity),randint(0,lv)))
-            player.addInventoryWearable(Gear("Sword",random.choice(rarity),randint(0,lv)))
-            #recalcDefense(player)
-            #recalcAttack(player)
-        #Okay you can look now
-        elif resp == "inventory":
-            lookup = input("Gear or Items?\n").lower()
-            if lookup == "gear":
-                player.showInventory()
-                sleep(3)
-            elif lookup == "items":
-                for item in player.inventory.keys():
-                    if item != "sword" and item != "armor":
-                        print(item,":",player.inventory[item])
-                sleep(4)
-        elif resp == "short":
-            player.shortCom = not player.shortCom
-        elif resp == "use":
-            item = input("What item are you using?\n")
-            player.useItem(item,msglog,self)
-        elif resp == "equip":
-            player.equipGear(msglog)
-        elif resp == "unequip":
-            gearSlot = input("Which item to unequip")
-            player.unequipGear(gearSlot,msglog)
-        elif resp in ["u","up"]:
-            self.moveUp(player,msglog,DEBUG)
-            moved = True
-        elif resp in ["d","down"]:
-            self.moveDown(player,msglog,DEBUG)
-            moved = True
-        elif resp in ["l","left"]:
-            moved = True
-            self.moveLeft(player,msglog,DEBUG)
-        elif resp in ["right","r"]:
-            moved = True
-            self.moveRight(player,msglog,DEBUG)
-        elif resp == "j": #jumpWall
-            self.jumpWall(player,msglog)
-            moved = True
-        elif resp == "b": #breakWall
-            self.breakWall(player,msglog)
-        elif resp == "p": # used primarily for debugging
-            msglog.addLog("You check your surroundings, you are at "+\
-                str(self.currentTuple))
-        elif resp == "rest":
-            if player.hunger > 10:
-                player.health += round(player.maxhealth/10)
-                if player.health > player.maxhealth:
-                    player.health = player.maxhealth
-                player.hunger -= 10
-                msglog.addLog("You take a short rest",True)
-                for ability in player.abilityList.keys():
-                    if player.abilityList[ability] > 0:
-                        player.abilityList[ability] -= 5
-                    if player.abilityList[ability] < 0:
-                        player.abilityList[ability] = 0
-        else: 
-            msglog.addLog("Invalid Action")
-            msgWait = True
-        if moved: #reduce hunger or health and cooldowns
-            self.afterMove(player,msglog,DEBUG)
-        if(msgWait):
-            sleep(.3)
-    def moveUp(self,player,msglog,DEBUG = False):
-        """
-        Moves the player up if possible
-        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
-        ADDED TO MAKE PYTEST EASIER
-        Args: same as move()
-        Side effects: same as move()
-        """
-        tupUp = self.currentTuple #THIS IS NOT A STRING YET
-        row,col = tupUp
-        up = str(self.currentTuple)
-        tupNewUp = "("+str(row-1)+", "+str(col)+")"
-        if tupNewUp in self.tuplemaze.keys() and \
-            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-            self.tuplemaze[up].playerthere = False
-            self.currentTuple = (row-1,col)
-            self.tuplemaze[tupNewUp].playerthere = True
-        else: msglog.addLog("A wall obstructs you")
-    def moveDown(self,player,msglog,DEBUG = False):
-        """
-        Moves the player down if possible
-        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
-        ADDED TO MAKE PYTEST EASIER
-        Args: same as move()
-        Side effects: same as move()
-        """
-        tupUp = self.currentTuple #THIS IS NOT A STRING YET
-        row,col = tupUp
-        up = str(self.currentTuple)
-        tupNewUp = "("+str(row+1)+", "+str(col)+")"
-        if tupNewUp in self.tuplemaze.keys() and \
-            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-            self.tuplemaze[up].playerthere = False
-            self.currentTuple = (row+1,col)
-            self.tuplemaze[tupNewUp].playerthere = True
-            moved = True
-        else: msglog.addLog("A wall obstructs you")
-    def moveLeft(self,player,msglog,DEBUG = False):
-        """
-        Moves the player left if possible
-        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
-        ADDED TO MAKE PYTEST EASIER
-        Args: same as move()
-        Side effects: same as move()
-        """
-        tupUp = self.currentTuple #THIS IS NOT A STRING YET
-        row,col = tupUp
-        up = str(self.currentTuple)
-        tupNewUp = "("+str(row)+", "+str(col-1)+")"
-        if tupNewUp in self.tuplemaze.keys() and\
-            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-            self.tuplemaze[up].playerthere = False
-            self.currentTuple = (row,col-1)
-            self.tuplemaze[tupNewUp].playerthere = True
-            moved = True
-        else: msglog.addLog("A wall obstructs you")
-    def moveRight(self,player,msglog,DEBUG = False):
-        """
-        Moves the player right if possible
-        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
-        ADDED TO MAKE PYTEST EASIER
-        Args: same as move()
-        Side effects: same as move()
-        """
-        tupUp = self.currentTuple #THIS IS NOT A STRING YET
-        row,col = tupUp
-        up = str(self.currentTuple)
-        tupNewUp = "("+str(row)+", "+str(col+1)+")"
-        if tupNewUp in self.tuplemaze.keys() and\
-            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-            self.tuplemaze[up].playerthere = False
-            self.currentTuple = (row,col+1)
-            self.tuplemaze[tupNewUp].playerthere = True
-            moved = True
-        else: msglog.addLog("A wall obstructs you")
-    def afterMove(self,player,msglog,DEBUG = False):
-        """
-        Checks the new tile the player has moved to.
-        DONT COUNT TOWARDS 8 UNIQUE METHODS
-        MAINLY FOR PYTEST EASY TESTING
-        """
-        for ability in player.abilityList.keys():
-            if player.abilityList[ability] > 0:
-                player.abilityList[ability] -= 1
-        if player.hunger > 0:
-            player.hunger -= 1
-        else: player.health -=1
-        if player.torchLeft > 0:
-            torchOn = True
-            player.torchLeft -= 1
-        else:
-            torchOn = False
-        if player.health == 0: #death check
-            msglog.addLog(player.name," has died of starvation")
-        if player.health > 0 and \
-            self.tuplemaze[str(self.currentTuple)].obsID == "T":
-
-            self.generateTreasure(player,msglog)
-            self.tuplemaze[str(self.currentTuple)].obsID = " "
-        #stair check
-        if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():
-            msglog.addLog(player.name+" took the stairs")
-            print(self.tuplemaze[str(self.currentTuple)].playerthere)
-            self.revealSurround(torchOn) 
-            #Have to reveal surrounding area before moving somewhere new
-            pos1,pos2 = self.mazeStairs\
-                [self.tuplemaze[str(self.currentTuple)].obsID]
-            self.tuplemaze[str(self.currentTuple)].playerthere = False
-            if self.currentTuple == pos1:
-                self.currentTuple = pos2
-            else:
-                self.currentTuple = pos1
-            self.tuplemaze[str(self.currentTuple)].playerthere = True
-            self.tuplemaze[str(self.currentTuple)].revealed = True
-        #battle check
-        if player.health > 0 and \
-            self.tuplemaze[str(self.currentTuple)].obsID == "B":
-            self.tuplemaze[str(self.currentTuple)].obsID = " "
-            enemyGen = Enemy()
-            msglog.addLog(player.name+" encountered a " + enemyGen.name)
-            cls()
-            print(msglog)
-            sleep(1.3)
-            battle_monsters(player, enemyGen,msglog)
-        self.revealSurround(torchOn) 
-    def setBorders(self):
-        """
-        Sets border attribute for cells in proximity to the edge / void
-
-        __authors__ =  'Nicholas Koy'
-
-        Side effect: Sets isBorder attr of certain Cells in tuplemaze dict
-        """
-        #print([self.tuplemaze[cell].obsID for cell in self.tuplemaze.keys()])
-        for cell in self.tuplemaze.keys():
-            cellKey = cell
-            cell = cell.replace("(","")
-            cell = cell.replace(")","")
-            row = int(cell.split(", ") [0])
-            col =  int(cell.split(", ") [1])
-            #print(row,col)
-            dirs = { "up":"("+str(row-1)+", "+str(col)+")",\
-                "down":"("+str(row+1)+", "+str(col)+")",\
-                "left":"("+str(row)+", "+str(col-1)+")",\
-                "right":"("+str(row)+", "+str(col+1)+")"}
-
-            for dire in dirs.keys():
-                if dirs[dire] not in self.tuplemaze.keys() or\
-                self.tuplemaze[dirs[dire]].obsID == "/":
-                    self.tuplemaze[cellKey].isBorder = True
-    def getBorder(self):
-        """
-        __authors__ = 'Nicholas Koy'
-        Gets a list of all cells that are borders
-
-        Returns: list of strings of cell keys from tuplemaze
-        """
-        borderList = []
-        for cell in self.tuplemaze.keys():
-            if self.tuplemaze[cell].isBorder:
-                borderList.append(cell)
-        return borderList
-
-    def revealSurround(self,torch = False):
-        """
-        Reveals the surrounding maze area (one cell away from the player 
-        and two if the player has a torch)
-
-        __authors__ =   'Ali Iqbal', and 'Nicholas Koy'
-
-        Side effect: changes self.revealed to True if player in proximity.
-        """
-        row,col = self.currentTuple
-        dirs ={ "up":"("+str(row-1)+", "+str(col)+")",\
-                "down":"("+str(row+1)+", "+str(col)+")",
-                "left":"("+str(row)+", "+str(col-1)+")", \
-                "right":"("+str(row)+", "+str(col+1)+")",\
-                "upl":"("+str(row-1)+", "+str(col-1)+")",
-                "downl":"("+str(row+1)+", "+str(col-1)+")",\
-                "upR":"("+str(row-1)+", "+str(col+1)+")",\
-                "downR":"("+str(row+1)+", "+str(col+1)+")"}
-        torchDirs = { 
-            "up":"("+str(row-2)+", "+str(col)+")",\
-            "down":"("+str(row+2)+", "+str(col)+")",
-            "left":"("+str(row)+", "+str(col-2)+")", \
-            "right":"("+str(row)+", "+str(col+2)+")"
-            }   
-        #currently only reveals one tile, 2 to be added soon        
-        for key in dirs.keys():
-            if dirs[key] in self.tuplemaze.keys():
-                self.tuplemaze[dirs[key]].revealed = True
-        if torch:
-            for key in torchDirs.keys():
-                if torchDirs[key] in self.tuplemaze.keys():
-                    self.tuplemaze[torchDirs[key]].revealed = True
 
 def recalcAttack(entity):
     """
@@ -2273,15 +2273,10 @@ def strike(entity1,entity2,msgLog):
         return True
     else:
         return False   
+#Nelson talk
 def battle_monsters(entity1, entity2, msgLog : MessageLog()):
     """
-    Brief Description:
-    here we are making a conditional that will determine who has won the battle.
-    the first criteria would be if the player has no health and the monsters
-    health is greater than the plyaer the monster has won the match. otherwise
-    the monster has won. if the player and monsters health has reached a limit
-    of 0, then that means that there has been a draw and nobody has won.
-    maybe there could be a rematch.
+    Starts the battle between player and monster until one dies
 
     Args:
         player (Player) - this will be the player attacking the monster
