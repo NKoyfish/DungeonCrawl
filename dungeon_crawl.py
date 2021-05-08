@@ -33,9 +33,9 @@ import os
 import math
 from random import randint
 import random
-from math import factorial  
+from math import factorial
 DEBUG = False
-SHOW_N_MESSAGES = 4
+SHOW_N_MESSAGES = 2
 def cls():
     os.system('cls' if os.name == 'nt' else 'clear')
 class MessageLog():
@@ -85,10 +85,10 @@ class MessageLog():
                     frame += "# " + message + " "* (maxStringSizeColor-len(message)-9)+ "#\n"
             frame+="=" *(stringsizeWObracket+7) + "\n"
         else:
-            frame = "=" *(maxStringSizeNoColor+4) + "\n"
+            frame = "▭" *(maxStringSizeNoColor+4) + "\n"
             for message in self.log:
-                frame += "# " + message + " "*(maxStringSizeNoColor-len(message)+1) + "#\n"
-            frame += "=" *(maxStringSizeNoColor+4) + "\n"
+                frame += "▯ " + message + " "*(maxStringSizeNoColor-len(message)+1) + "▯\n"
+            frame += "▭" *(maxStringSizeNoColor+4) + "\n"
         print (frame)
     def __str__(self):
         """
@@ -115,21 +115,20 @@ class MessageLog():
                 if maxStringSizeNoColor < len(message):
                      maxStringSizeNoColor = len(message)
         if colorTwo:
-            frame = "=" *(stringsizeWObracket+7) + "\n"
+            frame = "▭" *(stringsizeWObracket+7) + "\n"
             for message in self.log[-SHOW_N_MESSAGES:]:
                 if "[" in message:
-                    frame += "# " + message + " "* (maxStringSizeColor-len(message))+"#\n"
+                    frame += "▯ " + message + " "* (maxStringSizeColor-len(message))+"▯\n"
                 else:
-                    frame += "# " + message + " "* (maxStringSizeColor-len(message)-9)+ "#\n"
-            frame+="=" *(stringsizeWObracket+7) + "\n"
+                    frame += "▯ " + message + " "* (maxStringSizeColor-len(message)-9)+ "▯\n"
+            frame+="▭" *(stringsizeWObracket+7) + "\n"
         elif not colorTwo and len(self.log) > 0:
-            frame = "=" *(maxStringSizeNoColor+4) + "\n"
+            frame = "▭" *(maxStringSizeNoColor+4) + "\n"
             for message in self.log[-maxMsg:]:
-                frame += "# " + message + " "*(maxStringSizeNoColor-len(message)+1) + "#\n"
-            frame += "=" *(maxStringSizeNoColor+4) + "\n"
+                frame += "▯ " + message + " "*(maxStringSizeNoColor-len(message)+1) + "▯\n"
+            frame += "▭" *(maxStringSizeNoColor+4) + "\n"
         elif len(self.log) < 2:
-            frame = "=========== \033[1;32;48mMessage Log\033[39m ============\n"+\
-            "===================================="
+            frame = ""
         return frame
     
     def addLog(self,msg,repeat = False):
@@ -154,7 +153,7 @@ class Cell:
     """
     A Cell makes up a Maze Object. The most basic Cells are walls and open
     spaces.
-    __author__ = 'Nicholas Koy' : class
+    __author__ = 'Nicholas Koy' : class and methods
     Attributes:
         col: (int) What column the Cell is located (index starts at 0)
         row: (int) What row the Cell is located in (index starts at 0)
@@ -260,10 +259,15 @@ class Player:
         Side effects: Initializes a new Player object
         """
         startingSword = Gear("Sword","Common",1)
-        self.inventory = {"map": 0, "sword": {"equip": startingSword, "unequip": [] },
+        if startingSword.attackVal[0] < 5: startingSword.attackVal[0] = 5
+        
+        self.inventory = {"map": 0, "sword": {"equip": startingSword, \
+            "unequip": [] },
         "armor" : {"equip": {"Helmet": None,"Body Armor":None,
-                "Boots":None,"Ring":None,"Amulet":None,"Gloves":None}, "unequip": []}, 
-        "small core": 0, "medium core":0, "large core": 0, "torch": 1}
+                "Boots":None,"Ring":None,"Amulet":None,"Gloves":None}, \
+                "unequip": []}, 
+        "small core": 0, "medium core":0, "large core": 0, "torch": 1,
+        "bandage":1}
         self.abilityList = {"break": 0, "jump": 0}
         self.name = name
         self.health = health
@@ -281,7 +285,7 @@ class Player:
         self.battlesFought = 0
         self.gearOffense = [0,0,0,0,0]
         self.gearDefense = self.gearOffense
-    
+        recalcAttack(self)
     def __str__(self):
         """
         __author__ = 'Nicholas Koy':Wanted to make str look more pretty
@@ -314,20 +318,21 @@ class Player:
                             str(self.gearOffense[damageType])+\
                                 damageMap[damageType]+"\033[0m"),
                 else:
-                    validDmg = (validDmg[0] + " " +str(self.gearOffense[damageType])+damageMap[damageType]),
+                    validDmg = (validDmg[0] + " " +str(self.gearOffense\
+                        [damageType])+damageMap[damageType]),
         validDmg = str(totalDmg)+":"+validDmg[0]
         tup =  (("#","S"),
-                ("# Name  :", self.name),
-                ("# Health:",str(self.health)+"/"+str(self.maxhealth)),
-                ("# Attack:", validDmg),
-                ("# Speed :", str(self.speed)),
-                ("# Hunger:", str(self.hunger)+"/"+str(self.maxhunger)),
+                ("▯ Name  :", self.name),
+                ("▯ Health:",str(self.health)+"/"+str(self.maxhealth)),
+                ("▯ Attack:", validDmg),
+                ("▯ Speed :", str(self.speed)),
+                ("▯ Hunger:", str(self.hunger)+"/"+str(self.maxhunger)),
                 ("#","E"))
         maxFrame = 0
         hasColor = False
         maxColorFrame = 0
         for x,y in tup:
-            if x != "# Attack":
+            if x != "▯ Attack":
                 if len(x) + len(y) > maxFrame: maxFrame = len(x) + len(y)
             else:
                 if "[" in x:
@@ -337,7 +342,7 @@ class Player:
         printFrame =""
         for x,y in tup:
             if x == "#":
-                row = "=" * (maxFrame+2 - (9*(numColors-1)))
+                row = "▭" * (maxFrame+2 - (9*(numColors-1)))
                 if y == "S":
                     row = row + "\n"
                 elif y == "E":
@@ -346,11 +351,11 @@ class Player:
             elif "[" not in y:# The stats print
                 rightrow = str(y)
                 row = x + " " * (maxFrame - (9*numColors) - len(rightrow)) + \
-                    rightrow+" #\n"
+                    rightrow+" ▯\n"
                 printFrame += row
             else: #Color
                 rightrow = str(y)
-                row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+" #\n"
+                row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+" ▯\n"
                 printFrame += row 
         return (printFrame)
     
@@ -407,7 +412,6 @@ class Player:
         validItems = ["torch","bandage","map"]
         if item in validItems:
             if item in self.inventory.keys() and self.inventory[item] > 0:
-                self.inventory[item] -= 1
                 if item == "torch":
                     self.torchLeft = randint(12,20)
                 elif item == "bandage":
@@ -416,6 +420,7 @@ class Player:
                         self.health = self.maxhealth
                 else:
                     maze.revealMap()
+                self.inventory[item] -= 1
             else:
                 msgLog.addLog("You have no more to use")
         else:
@@ -436,33 +441,43 @@ class Player:
         elif  item.slot in ["Sword"]:
             self.inventory["sword"]["unequip"].append(item)
                  
-    def showInventory(self,swap = False):
+    def showInventory(self,swap = False,unequip = False):
         """
         Prints the gear the player has
         __author__ = 'Nicholas Koy'
         Args:
                 swap(Boolean): If the player needs to see item position
-        
+                unequip (Boolean): Shows just equipped items if True
         Side Effect: Prints to stdout
         """
         os.system('')
         count = 0
+        countunequip = 0
         print("===================== Equipped =========================")
-        print(self.inventory["sword"]["equip"])
+        if countunequip:
+            print(self.inventory["sword"]["equip"] + "Item ", countunequip)
+            countunequip += 1
+        else:
+            print(self.inventory["sword"]["equip"])
         for armor in self.inventory["armor"]["equip"].keys():
             if self.inventory["armor"]["equip"][armor] != None:
-                print(self.inventory["armor"]["equip"][armor])
-        print("===================== Not Equipped =====================")
-        for gear in self.inventory["sword"]["unequip"]:
-            print(gear)
-            if swap:
-                print("Gear ",count)
-                count+=1
-        for gear in self.inventory["armor"]["unequip"]:
-            print(gear)
-            if swap:
-                print("Gear ",count)
-                count+=1
+                if countunequip:
+                    print(self.inventory["armor"]["equip"][armor] + "Item " +\
+                        countunequip)
+                    countunequip += 1
+                else: print(self.inventory["armor"]["equip"][armor])
+        if not unequip:
+            print("===================== Not Equipped =====================")
+            for gear in self.inventory["sword"]["unequip"]:
+                print(gear)
+                if swap:
+                    print("Gear ",count)
+                    count+=1
+            for gear in self.inventory["armor"]["unequip"]:
+                print(gear)
+                if swap:
+                    print("Gear ",count)
+                    count+=1
     def equipGear(self,msgLog : MessageLog()):
         """
         Asks the player to swap equipped gear (if any) for the same type
@@ -479,9 +494,11 @@ class Player:
                 if self.inventory["sword"]["equip"] != []:
                     swapGear = self.inventory["sword"]["equip"]
                     self.inventory["sword"]["unequip"].append(swapGear)
-                    self.inventory["sword"]["equip"]= self.inventory["sword"]["unequip"][item]
+                    self.inventory["sword"]["equip"]= \
+                        self.inventory["sword"]["unequip"][item]
                     del self.inventory["sword"]["unequip"][item]
-                    msgLog.addLog("Swapped Sword to " + self.inventory["sword"]["equip"].name+" ")
+                    msgLog.addLog("Swapped Sword to " + \
+                        self.inventory["sword"]["equip"].name+" ")
                     recalcAttack(self)
                     recalcDefense(self)
             else:
@@ -498,7 +515,8 @@ class Player:
                             len(self.inventory["sword"]["unequip"])]
                     del self.inventory["armor"]["unequip"][item - \
                         len(self.inventory["sword"]["unequip"])]
-                    action = "Swapped " + armorType + "to " + tempArmor.name + " "
+                    action = "Swapped " + armorType + "to " + \
+                        tempArmor.name + " "
                 else:
                     self.inventory["armor"]["equip"][armorType]= \
                         self.inventory["armor"]["unequip"][item - \
@@ -527,7 +545,33 @@ class Player:
                                 ...["unequip]["sword"]/["armor"] dictionary
                                 respectively
         """
-        return 1
+        self.showInventory(False,True)
+        action = ""
+        if itemType.lower() in ["sword","helmet","gloves","boots","body armor"]:
+            if itemType == "sword" and self.inventory["sword"]["equip"] != None:
+                print("hello")
+                sleep(3)
+                self.inventory["sword"]["unequip"].append(\
+                    self.inventory["sword"]["equip"])
+                self.inventory["sword"]["equip"] = None
+                action = "Put Sword away "
+                recalcAttack(self)
+            elif self.inventory["armor"]["equip"][itemType] != None:
+                self.inventory["armor"]["unequip"].append(\
+                    self.inventory["armor"]["equip"][itemType])
+                name = self.inventory["armor"]["equip"][itemType].name
+                hpsub =self.inventory["armor"]["equip"][itemType].defenseVals[0]
+                self.maxhealth - abs(hpsub)
+                self.health - abs(hpsub)
+                self.inventory["armor"]["equip"][itemType] = None
+                action = "Put " + name + " away "
+
+                recalcDefense(self)
+            msgLog.addLog(action)
+            print(msgLog)
+            sleep(1)
+            cls()
+            self.showInventory()
 class Enemy:
     """
     __author__ = 'Nelson Contreras' : __init__() and __str__()
@@ -572,23 +616,23 @@ class Enemy:
         if self.montype == 1:
             self.attack = randint(40,60)
             self.speed = randint(30,50)
-            self.name = "Frail " + self.name
+            self.name = "Lv 1 " + self.name
         elif self.montype == 2:
             self.attack = randint(50,65)
             self.speed = randint(40,55)
-            self.name = "Haggard " + self.name
+            self.name = "Lv 2 " + self.name
         elif self.montype == 3:
             self.attack = randint(60,75)
             self.speed = randint(50,70)
-            self.name = "Skilled " + self.name
+            self.name = "Lv 3 " + self.name
         elif self.montype == 4:
             self.attack = randint(75,95)
             self.speed = randint(55,60)
-            self.name = "Elite " + self.name
+            self.name = "Lv 4 " + self.name
         else:
             self.attack = randint(80,100)
             self.speed = randint(60,70)
-            self.name = "Ancient " + self.name
+            self.name = "Lv 5 " + self.name
         self.health = factorial(self.montype) * 5 + 100
         #balance
         self.attack = self.attack* 2 / 3 
@@ -634,13 +678,13 @@ class Enemy:
         armorChoice = random.choice(armorTypes)
         armorTypes.remove(armorChoice)
         self.inventory["armor"]["equip"][armorChoice] = \
-            Gear(armorChoice,"Legendary", 2+(self.montype-4))
+            Gear(armorChoice,"Common", 2+(self.montype-4))
         
         #armor dict -> equip dict -> string of gear types pairs to an item
         if self.montype > 3:
             armorChoice = random.choice(armorTypes)
             self.inventory["armor"]["equip"][armorChoice] = \
-                Gear(armorChoice,"Legendary", 2+(self.montype-4))
+                Gear(armorChoice,"Ultra Rare", 2+(self.montype-4))
         recalcAttack(self)
         recalcDefense(self)
         self.maxhealth += self.gearDefense[0]
@@ -783,6 +827,7 @@ class Maze():
     maxRow (int):       Total # of Cell rows in the maze used for iterating
     maxCol (int):       Total # of Cell columns in the maze used for iterating        
     """
+    WALL = "\033[1;4;37m"
     def __init__(self,mazefile,player):
         """
         Initializes a new Maze object
@@ -853,7 +898,15 @@ class Maze():
                     self.modulePts[len(self.modulePts)-1]]
         self.revealSurround()
         self.setBorders()
-    
+    def visible(self,mode):
+        """
+        Changes wall color from white to black
+        or black to white
+        """
+        if mode == "light":
+            Maze.WALL = "\033[1;4;37m"
+        else:
+            Maze.WALL = "\033[1;4;30m"
     def printMaze(self,player,msgLog: MessageLog(),boole = False):
         """
         prints the maze for the user to see current progress 
@@ -881,12 +934,14 @@ class Maze():
                 name = "("+str(r)+", "+str(c)+")"
                 if name in self.tuplemaze.keys():
                     if self.tuplemaze[name].playerthere:
-                        print("\033[92mP\033[0m",end ="")
+                        print("\033[1;92mP\033[0m",end ="")
                     elif not boole:
                         if self.tuplemaze[name].obsID == "B" and self.tuplemaze[name].revealed:
-                            print("\033[94m"+str(self.tuplemaze[name])+"\033[0m",end ="")
+                            print("\033[1;31m"+'B'+"\033[0m",end ="")
                         elif self.tuplemaze[name].obsID == "=" and self.tuplemaze[name].revealed:
-                            print("\033[31;2;4m"+str(self.tuplemaze[name])+"\033[0m",end ="")
+                            print(Maze.WALL+'■'+"\033[0m",end ="")
+                        elif self.tuplemaze[name].obsID == "T" and self.tuplemaze[name].revealed:
+                            print("\033[1;33m"+str(self.tuplemaze[name])+"\033[0m",end ="")
                         else:
                             print(self.tuplemaze[name],end ="")
                     else:print(self.tuplemaze[name].obsID,end ="")
@@ -1102,7 +1157,8 @@ class Maze():
                 "(stats),(short),(logs)\n"
         else: ask = "\nMove where? (U)p,(D)own,(L)eft, or (R)ight\n" +\
         "Other: (Rest), (B)reak Wall, (J)ump Wall, (use) item, or (P)osition" +\
-        "\nToggles: player (stats),(short) commands, or message (logs)\n"
+        "\nShow (Inventory),(equip) gear \n" +\
+        "Toggles: player(stats),(short) commands,(dark),(light) or see (logs)\n"
 
         resp = input(ask)
         moved = False
@@ -1111,6 +1167,8 @@ class Maze():
         tupUp = self.currentTuple #THIS IS NOT A STRING YET
         row,col = tupUp
         resp = resp.lower()
+        if resp == "dark" or resp == "light":
+            self.visible(resp)
         if resp == "stats":
             player.hideStats = not player.hideStats
         elif resp == "logs":
@@ -1164,7 +1222,15 @@ class Maze():
             #recalcAttack(player)
         #Okay you can look now
         elif resp == "inventory":
-            pass
+            lookup = input("Gear or Items?\n").lower()
+            if lookup == "gear":
+                player.showInventory()
+                sleep(3)
+            elif lookup == "items":
+                for item in player.inventory.keys():
+                    if item != "sword" and item != "armor":
+                        print(item,":",player.inventory[item])
+                sleep(4)
         elif resp == "short":
             player.shortCom = not player.shortCom
         elif resp == "use":
@@ -1174,47 +1240,19 @@ class Maze():
             player.equipGear(msglog)
         elif resp == "unequip":
             gearSlot = input("Which item to unequip")
-            player.unequip(gearSlot,msgLog)
+            player.unequipGear(gearSlot,msglog)
         elif resp in ["u","up"]:
-            up = str(self.currentTuple)
-            tupNewUp = "("+str(row-1)+", "+str(col)+")"
-            if tupNewUp in self.tuplemaze.keys() and \
-                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-                self.tuplemaze[up].playerthere = False
-                self.currentTuple = (row-1,col)
-                self.tuplemaze[tupNewUp].playerthere = True
-                moved = True
-            else: msglog.addLog("A wall obstructs you")
+            self.moveUp(player,msglog,DEBUG)
+            moved = True
         elif resp in ["d","down"]:
-            up = str(self.currentTuple)
-            tupNewUp = "("+str(row+1)+", "+str(col)+")"
-            if tupNewUp in self.tuplemaze.keys() and \
-                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-                self.tuplemaze[up].playerthere = False
-                self.currentTuple = (row+1,col)
-                self.tuplemaze[tupNewUp].playerthere = True
-                moved = True
-            else: msglog.addLog("A wall obstructs you")
+            self.moveDown(player,msglog,DEBUG)
+            moved = True
         elif resp in ["l","left"]:
-            up = str(self.currentTuple)
-            tupNewUp = "("+str(row)+", "+str(col-1)+")"
-            if tupNewUp in self.tuplemaze.keys() and\
-                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-                self.tuplemaze[up].playerthere = False
-                self.currentTuple = (row,col-1)
-                self.tuplemaze[tupNewUp].playerthere = True
-                moved = True
-            else: msglog.addLog("A wall obstructs you")
+            moved = True
+            self.moveLeft(player,msglog,DEBUG)
         elif resp in ["right","r"]:
-            up = str(self.currentTuple)
-            tupNewUp = "("+str(row)+", "+str(col+1)+")"
-            if tupNewUp in self.tuplemaze.keys() and\
-                self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
-                self.tuplemaze[up].playerthere = False
-                self.currentTuple = (row,col+1)
-                self.tuplemaze[tupNewUp].playerthere = True
-                moved = True
-            else: msglog.addLog("A wall obstructs you")
+            moved = True
+            self.moveRight(player,msglog,DEBUG)
         elif resp == "j": #jumpWall
             self.jumpWall(player,msglog)
             moved = True
@@ -1239,52 +1277,134 @@ class Maze():
             msglog.addLog("Invalid Action")
             msgWait = True
         if moved: #reduce hunger or health and cooldowns
-            for ability in player.abilityList.keys():
-                if player.abilityList[ability] > 0:
-                    player.abilityList[ability] -= 1
-            if player.hunger > 0:
-                player.hunger -= 1
-            else: player.health -=1
-            if player.torchLeft > 0:
-                torchOn = True
-                player.torchLeft -= 1
-            else:
-                torchOn = False
-            if player.health == 0: #death check
-                msglog.addLog(player.name," has died of starvation")
-            if player.health > 0 and \
-                self.tuplemaze[str(self.currentTuple)].obsID == "T":
-
-                self.generateTreasure(player,msglog)
-                self.tuplemaze[str(self.currentTuple)].obsID = " "
-            #stair check
-            if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():
-                msglog.addLog(player.name+" took the stairs")
-                print(self.tuplemaze[str(self.currentTuple)].playerthere)
-                self.revealSurround(torchOn) 
-                #Have to reveal surrounding area before moving somewhere new
-                pos1,pos2 = self.mazeStairs\
-                    [self.tuplemaze[str(self.currentTuple)].obsID]
-                self.tuplemaze[str(self.currentTuple)].playerthere = False
-                if self.currentTuple == pos1:
-                    self.currentTuple = pos2
-                else:
-                    self.currentTuple = pos1
-                self.tuplemaze[str(self.currentTuple)].playerthere = True
-                self.tuplemaze[str(self.currentTuple)].revealed = True
-            #battle check
-            if player.health > 0 and \
-                self.tuplemaze[str(self.currentTuple)].obsID == "B":
-                self.tuplemaze[str(self.currentTuple)].obsID = " "
-                enemyGen = Enemy()
-                msglog.addLog(player.name+" encountered a(n) " + enemyGen.name)
-                cls()
-                print(msglog)
-                sleep(1.3)
-                battle_monsters(player, enemyGen,msglog)
-            self.revealSurround(torchOn) 
+            self.afterMove(player,msglog,DEBUG)
         if(msgWait):
             sleep(.3)
+    def moveUp(self,player,msglog,DEBUG = False):
+        """
+        Moves the player up if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row-1)+", "+str(col)+")"
+        if tupNewUp in self.tuplemaze.keys() and \
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row-1,col)
+            self.tuplemaze[tupNewUp].playerthere = True
+        else: msglog.addLog("A wall obstructs you")
+    def moveDown(self,player,msglog,DEBUG = False):
+        """
+        Moves the player down if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row+1)+", "+str(col)+")"
+        if tupNewUp in self.tuplemaze.keys() and \
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row+1,col)
+            self.tuplemaze[tupNewUp].playerthere = True
+            moved = True
+        else: msglog.addLog("A wall obstructs you")
+    def moveLeft(self,player,msglog,DEBUG = False):
+        """
+        Moves the player left if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row)+", "+str(col-1)+")"
+        if tupNewUp in self.tuplemaze.keys() and\
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row,col-1)
+            self.tuplemaze[tupNewUp].playerthere = True
+            moved = True
+        else: msglog.addLog("A wall obstructs you")
+    def moveRight(self,player,msglog,DEBUG = False):
+        """
+        Moves the player right if possible
+        WILL NOT COUNT TOWARDS 8 UNIQUE METHODS
+        ADDED TO MAKE PYTEST EASIER
+        Args: same as move()
+        Side effects: same as move()
+        """
+        tupUp = self.currentTuple #THIS IS NOT A STRING YET
+        row,col = tupUp
+        up = str(self.currentTuple)
+        tupNewUp = "("+str(row)+", "+str(col+1)+")"
+        if tupNewUp in self.tuplemaze.keys() and\
+            self.tuplemaze[tupNewUp].obsID not in ["=","/"]:
+            self.tuplemaze[up].playerthere = False
+            self.currentTuple = (row,col+1)
+            self.tuplemaze[tupNewUp].playerthere = True
+            moved = True
+        else: msglog.addLog("A wall obstructs you")
+    def afterMove(self,player,msglog,DEBUG = False):
+        """
+        Checks the new tile the player has moved to.
+        DONT COUNT TOWARDS 8 UNIQUE METHODS
+        MAINLY FOR PYTEST EASY TESTING
+        """
+        for ability in player.abilityList.keys():
+            if player.abilityList[ability] > 0:
+                player.abilityList[ability] -= 1
+        if player.hunger > 0:
+            player.hunger -= 1
+        else: player.health -=1
+        if player.torchLeft > 0:
+            torchOn = True
+            player.torchLeft -= 1
+        else:
+            torchOn = False
+        if player.health == 0: #death check
+            msglog.addLog(player.name," has died of starvation")
+        if player.health > 0 and \
+            self.tuplemaze[str(self.currentTuple)].obsID == "T":
+
+            self.generateTreasure(player,msglog)
+            self.tuplemaze[str(self.currentTuple)].obsID = " "
+        #stair check
+        if self.tuplemaze[str(self.currentTuple)].obsID.isdigit():
+            msglog.addLog(player.name+" took the stairs")
+            print(self.tuplemaze[str(self.currentTuple)].playerthere)
+            self.revealSurround(torchOn) 
+            #Have to reveal surrounding area before moving somewhere new
+            pos1,pos2 = self.mazeStairs\
+                [self.tuplemaze[str(self.currentTuple)].obsID]
+            self.tuplemaze[str(self.currentTuple)].playerthere = False
+            if self.currentTuple == pos1:
+                self.currentTuple = pos2
+            else:
+                self.currentTuple = pos1
+            self.tuplemaze[str(self.currentTuple)].playerthere = True
+            self.tuplemaze[str(self.currentTuple)].revealed = True
+        #battle check
+        if player.health > 0 and \
+            self.tuplemaze[str(self.currentTuple)].obsID == "B":
+            self.tuplemaze[str(self.currentTuple)].obsID = " "
+            enemyGen = Enemy()
+            msglog.addLog(player.name+" encountered a " + enemyGen.name)
+            cls()
+            print(msglog)
+            sleep(1.3)
+            battle_monsters(player, enemyGen,msglog)
+        self.revealSurround(torchOn) 
     def setBorders(self):
         """
         Sets border attribute for cells in proximity to the edge / void
@@ -1355,7 +1475,7 @@ class Maze():
             for key in torchDirs.keys():
                 if torchDirs[key] in self.tuplemaze.keys():
                     self.tuplemaze[torchDirs[key]].revealed = True
-#Pretend these don't exist
+
 def recalcAttack(entity):
     """
     Recalculates the entity's attack based off the weapon held and bonuses from
@@ -1366,14 +1486,18 @@ def recalcAttack(entity):
     Side effects: sets entity.gearOffense for damage calculation
     """
     att = [0,0,0,0,0]
-    for damagetype in range(len(entity.inventory["sword"]["equip"].attackVal)):
-        att[damagetype] += entity.inventory["sword"]["equip"].attackVal[damagetype]
-    if entity.inventory["armor"]["equip"]["Ring"] != None:
-        for dmg in entity.inventory["armor"]["equip"]["Ring"].attackVal:
-            att[dmg] += entity.inventory["armor"]["equip"]["Ring"][dmg]
-    if entity.inventory["armor"]["equip"]["Amulet"] != None:
-        for dmg in entity.inventory["armor"]["equip"]["Amulet"].attackVal:
-            att[dmg] += entity.inventory["armor"]["equip"]["Amulet"][dmg]
+    if entity.inventory["sword"]["equip"] != None:
+
+        for damagetype in \
+            range(len(entity.inventory["sword"]["equip"].attackVal)):
+            att[damagetype] += \
+            entity.inventory["sword"]["equip"].attackVal[damagetype]
+        if entity.inventory["armor"]["equip"]["Ring"] != None:
+            for dmg in entity.inventory["armor"]["equip"]["Ring"].attackVal:
+                att[dmg] += entity.inventory["armor"]["equip"]["Ring"][dmg]
+        if entity.inventory["armor"]["equip"]["Amulet"] != None:
+            for dmg in entity.inventory["armor"]["equip"]["Amulet"].attackVal:
+                att[dmg] += entity.inventory["armor"]["equip"]["Amulet"][dmg]
     entity.gearOffense = att
     #print(sum(att))
 def recalcDefense(entity):
@@ -1463,9 +1587,13 @@ def generateLoot(player,msgLog,enemy = None):
         cores = ["small core","medium core","large core"]
         drop = cores[random.choice([0,0,0,1,1,2])]
         player.inventory[drop] += 1
+    cls()
+    if not player.hideStats:
+        print(player)
     msgLog.addLog("Found "+str(drop)+" ")
     print(msgLog)
     sleep(1)
+#Pretend these don't exist or exist as one method
 def generateWeaponEnchant(rarity,montype):
     """
     Enchants based on rarity of the Sword and gives extra weight to values if
@@ -1487,36 +1615,43 @@ def generateWeaponEnchant(rarity,montype):
     weaponDefBonus = [0,0,0,0,0]
     secondScale = 1
     if rarity == "Legendary":
-        weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
-        weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)
-        weaponName,weaponDmg,weaponDefBonus = addUniqueWeaponEnchant(weaponName,weaponDmg,weaponDefBonus)
-        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
-        weaponDmg = [dmgtype * 1.09 for dmgtype in weaponDmg]
+        weaponName,weaponDmg,weaponDefBonus = \
+            addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = \
+            addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)
+        weaponName,weaponDmg,weaponDefBonus = \
+            addUniqueWeaponEnchant(weaponName,weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = \
+            addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.09 + 7for dmgtype in weaponDmg if dmgtype > 0]
     elif rarity == "Ultra Rare":
-        weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
-        weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)    
-        weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
-        weaponDmg = [dmgtype * 1.05 for dmgtype in weaponDmg]
+        weaponName,weaponDmg,weaponDefBonus = \
+            addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
+        weaponName,weaponDmg,weaponDefBonus = \
+            addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)    
+        weaponName,weaponDmg,weaponDefBonus = \
+            addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
+        weaponDmg = [dmgtype * 1.05 +5 for dmgtype in weaponDmg if dmgtype > 0]
     elif rarity == "Unique":
         weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
         weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)    
         weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
-        weaponDmg = [dmgtype * 1.15 + 2 for dmgtype in weaponDmg]
+        weaponDmg = [dmgtype * 1.15 + 5 for dmgtype in weaponDmg]
     elif rarity == "Rare":
         weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
         weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)
         weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
-        weaponDmg = [dmgtype * 1.04 for dmgtype in weaponDmg]
+        weaponDmg = [dmgtype * 1.04 + 2for dmgtype in weaponDmg if dmgtype > 0]
     elif rarity == "Uncommon":
         #weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
         weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"",montype)
         weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
-        weaponDmg = [dmgtype * 1.03 for dmgtype in weaponDmg]
+        weaponDmg = [dmgtype * 1.03 + 1 for dmgtype in weaponDmg if dmgtype > 0]
     elif rarity == "Common":
         #weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
         #weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"Sword")
         weaponName,weaponDmg,weaponDefBonus = addWeaponTitle(weaponName,weaponDmg,weaponDefBonus,montype,rarity)
-        weaponDmg = [dmgtype * 1.02 for dmgtype in weaponDmg]
+        weaponDmg = [dmgtype * 1.02 + 1for dmgtype in weaponDmg if dmgtype > 0]
     else:
         #weaponName,weaponDmg,weaponDefBonus = addMajorWeaponPrefix("",weaponDmg,weaponDefBonus)
         #weaponName,weaponDmg,weaponDefBonus = addLesserWeaponSuff(weaponName,weaponDmg,weaponDefBonus,"Sword")
@@ -2037,7 +2172,7 @@ def showBoth(entity1,entity2):
         entity2 (Enemy): The enemy being fought by Entity1
     Side effects: Clears screen and prints to stdout in color
     """
-    boxSize = "#$e1n"
+    boxSize = "║$e1n"
     temp = ""
     tem = Template(boxSize).substitute(e1n = entity1.name)
     if not len(entity2.name)%2:
@@ -2049,17 +2184,17 @@ def showBoth(entity1,entity2):
     else:
         tem += " " * 10
     if  (len(tem)%2):
-        tem += "  $e2#\n"
+        tem += "  $e2║\n"
     else:
-        tem += " $e2#\n"
+        tem += " $e2║\n"
     tem2 = Template(tem).substitute(e2 = entity2.name)
     if len(tem2)%2:
-        battleScreen = "=" * (len(tem2)) + "\n"
+        battleScreen = "▭" * (len(tem2)) + "\n"
         battleScreen = (battleScreen[0:len(entity1.name)] +\
              battleScreen[1+len(entity1.name):]) 
         tem2 = (tem2[0:len(entity1.name)] + tem2[1+len(entity1.name):]) 
     else:
-        battleScreen = "=" * (len(tem2)-1) + "\n"
+        battleScreen = "▭" * (len(tem2)-1) + "\n"
     halfScreen = int(len(battleScreen)/2 -2)
     numGreen1 = int((entity1.health / entity1.maxhealth)* (halfScreen))
     numRed1 = halfScreen - numGreen1
@@ -2068,12 +2203,12 @@ def showBoth(entity1,entity2):
     if numRed1 > halfScreen: numRed1 = halfScreen 
     if numRed2 > halfScreen: numRed2 = halfScreen
     cls()
-    hpSym = "%"
+    hpSym = "░"
     hpbar1 = "\033[92m" + hpSym *(numGreen1) + \
     "\033[0m"+"\033[91m" + hpSym *numRed1 + "\033[0m"
     hpbar2 = "\033[91m" + hpSym*numRed2 + "\033[0m"+"\033[92m" + hpSym*numGreen2 \
         + "\033[0m"
-    bothbars = "#"+hpbar1 + "#" + hpbar2+ "#\n"
+    bothbars = "║"+hpbar1 + "║" + hpbar2+ "║\n"
     entity2.name =temp 
     print(battleScreen+tem2+bothbars+battleScreen)
 def strike(entity1,entity2,msgLog):
@@ -2242,7 +2377,7 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
             
         elif resp == "u":
             item = input("Use what?\n")
-            entity1.useItem(item,msgLog,self)
+            entity1.useItem(item,msgLog)
             sleep(1)
         elif resp == "r":
             enemyFaster = False
