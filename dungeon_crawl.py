@@ -943,7 +943,7 @@ class Player:
         "armor" : {"equip": {"Helmet": None,"Body Armor":None,
                 "Boots":None,"Ring":None,"Amulet":None,"Gloves":None}, \
                 "unequip": []}, 
-        "small core": 0, "medium core":1, "large core": 0, "torch": 1,
+        "small core": 0, "medium core":0, "large core": 0, "torch": 1,
         "bandage":1}
         self.abilityList = {"break": 0, "jump": 0}
         self.name = name
