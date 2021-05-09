@@ -4,7 +4,7 @@ import sys
 import os
 import builtins
 from unittest import mock
-
+from unittest.mock import patch
 from time import sleep
 def test_playerInit():
     name,hp,attack,speed,hunger = "Bob",1,2,3,4
@@ -41,6 +41,7 @@ def test_mazeInit():
     assert testMaze.tuplemaze["(1, 2)"].obsID == "T","Treasure in wrong place"
 def test_move():
     """
+    Uses moveDir() to check movement and log output on wall bump
     """
     p = "test_maze.txt" 
     msglog = dg.MessageLog()
@@ -70,9 +71,10 @@ def test_move2():
     with mock.patch("builtins.input",side_effect = ["r"]):
         assert testMaze.move(player,msglog) == None
     assert str(testMaze.currentTuple) == "(2, 4)"
-def test_move3(capsys):
+def test_moveAndBattle(capsys):
     """
     Does the game know how to handle other tiles correctly?
+
     """
     outerr = capsys.readouterr()
     out = outerr.out
@@ -82,13 +84,13 @@ def test_move3(capsys):
     player = dg.Player(name,hp,attack,speed,hunger)
     testMaze = dg.Maze(p,player)
     with mock.patch("builtins.input",side_effect = ["r"]):
-        assert testMaze.move(player,msglog) == None
+        testMaze.move(player,msglog)
     with mock.patch("builtins.input",side_effect = ["u"]):
-        assert testMaze.move(player,msglog) == None
+        testMaze.move(player,msglog)
         assert testMaze.tuplemaze[str(testMaze.currentTuple)].obsID == "E"
         #Only the main script from the module can end the game
     with mock.patch("builtins.input",side_effect = ["l"]):
-        assert testMaze.move(player,msglog) == None
+        testMaze.move(player,msglog)
         print(msglog.log)
         combined ="".join(msglog.log)
         assert "picked up" in combined, "Something should have been picked up"
@@ -97,4 +99,38 @@ def test_move3(capsys):
         combined ="".join(msglog.log)
         assert "encountered" in combined, "Enemy should have appeared"
         assert "killed" in combined, "Enemy should have died"
+        assert player.battlesWon == 1
+        assert player.battlesFought == 1
+        assert player.getScore() >= 110, \
+            "Score from killing enemy and item should be >= 110"
         assert "Found" in combined, "Item should have dropped"
+def test_breakWall(capsys):
+    """
+    test some cases of break wall
+        namely: normal case, border case, and breaking while on cooldown
+    """
+    outerr = capsys.readouterr()
+    p = "jumpBreak.txt" 
+    msglog = dg.MessageLog()
+    name,hp,attack,speed,hunger = "Bob",1000,2000,3000,4000
+    player = dg.Player(name,hp,attack,speed,hunger)
+    testMaze = dg.Maze(p,player)
+    with mock.patch("builtins.input",side_effect = ["r","b","right"]):
+        testMaze.move(player,msglog)
+        testMaze.move(player,msglog)
+        assert testMaze.tuplemaze["(1, 3)"].obsID == " "
+    with mock.patch("builtins.input",side_effect = ["b","rest"]):
+        testMaze.move(player,msglog)
+        combined ="".join(msglog.log)
+        assert "broke" in combined
+        err = ""
+        out,err = capsys.readouterr()
+        assert "cooldown" in str(out)
+        testMaze.move(player,msglog)
+    with mock.patch("builtins.input",side_effect = ["b"]):
+        testMaze.move(player,msglog)
+        out,err = capsys.readouterr()
+        assert "No wall to break" in str(out)
+        
+        
+
