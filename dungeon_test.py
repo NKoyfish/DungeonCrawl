@@ -2,6 +2,9 @@ from pytest import approx, raises as pytest_raises
 import dungeon_crawl as dg
 import sys
 import os
+import builtins
+from unittest import mock
+
 from time import sleep
 def test_playerInit():
     name,hp,attack,speed,hunger = "Bob",1,2,3,4
@@ -37,6 +40,8 @@ def test_mazeInit():
     assert testMaze.tuplemaze["(1, 1)"].obsID == "B","Enemy in wrong place"
     assert testMaze.tuplemaze["(1, 2)"].obsID == "T","Treasure in wrong place"
 def test_move():
+    """
+    """
     p = "test_maze.txt" 
     msglog = dg.MessageLog()
     name,hp,attack,speed,hunger = "Bob",1000,2000,3000,4000
@@ -44,10 +49,52 @@ def test_move():
     testMaze = dg.Maze(p,player)
     testMaze.moveUp(player,msglog)
     testMaze.afterMove(player,msglog)
-    print(player.inventory)
+    #print(player.inventory)
     assert "picked up" in str(msglog.log)
     testMaze.moveUp(player,msglog)
     testMaze.afterMove(player,msglog)
     assert "wall" in str(msglog.log)
-    
-
+def test_move2():
+    """
+    Will move() work when the player walks on a stair case?
+    """
+    p = "test_maze.txt" 
+    msglog = dg.MessageLog()
+    name,hp,attack,speed,hunger = "Bob",1,2,3,4
+    player = dg.Player(name,hp,attack,speed,hunger)
+    testMaze = dg.Maze(p,player)
+    with mock.patch("builtins.input",side_effect = ["d"]):
+        assert testMaze.move(player,msglog) == None
+    with mock.patch("builtins.input",side_effect = ["r"]):
+        assert testMaze.move(player,msglog) == None
+    with mock.patch("builtins.input",side_effect = ["r"]):
+        assert testMaze.move(player,msglog) == None
+    assert str(testMaze.currentTuple) == "(2, 4)"
+def test_move3(capsys):
+    """
+    Does the game know how to handle other tiles correctly?
+    """
+    outerr = capsys.readouterr()
+    out = outerr.out
+    p = "test_maze.txt" 
+    msglog = dg.MessageLog()
+    name,hp,attack,speed,hunger = "Bob",1000,2000,3000,4000
+    player = dg.Player(name,hp,attack,speed,hunger)
+    testMaze = dg.Maze(p,player)
+    with mock.patch("builtins.input",side_effect = ["r"]):
+        assert testMaze.move(player,msglog) == None
+    with mock.patch("builtins.input",side_effect = ["u"]):
+        assert testMaze.move(player,msglog) == None
+        assert testMaze.tuplemaze[str(testMaze.currentTuple)].obsID == "E"
+        #Only the main script from the module can end the game
+    with mock.patch("builtins.input",side_effect = ["l"]):
+        assert testMaze.move(player,msglog) == None
+        print(msglog.log)
+        combined ="".join(msglog.log)
+        assert "picked up" in combined, "Something should have been picked up"
+    with mock.patch("builtins.input",side_effect = ["l","a"]):
+        testMaze.move(player,msglog)
+        combined ="".join(msglog.log)
+        assert "encountered" in combined, "Enemy should have appeared"
+        assert "killed" in combined, "Enemy should have died"
+        assert "Found" in combined, "Item should have dropped"
