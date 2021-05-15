@@ -563,7 +563,7 @@ class Maze():
             msgLog.addLog("Jump is still on cooldown for "+\
                 str(player.abilityList[j]) +  "turns")
     #Nick 
-    def move(self,player,msglog,DEBUG = False):
+    def move(self,player,msglog,DEBUG = False,enemyMove = False):
         """
         A players "turn" in a maze. Here they can decide to either move, rest,
         or perform a skill.
@@ -682,7 +682,7 @@ class Maze():
             player.shortCom = not player.shortCom
         elif resp == "use":
             item = input("What item are you using?\n"+\
-                "Food, torch, map, or bandage").lower()
+                "Food, torch, map, or bandage\n").lower()
             player.useItem(item,msglog,self)
         elif resp == "equip":
             player.equipGear(msglog)
@@ -728,19 +728,20 @@ class Maze():
             if player.hunger > 0:
                 if player.health+1 < player.maxhealth : player.health += 1
             self.afterMove(player,msglog,DEBUG)
-            for enemy in self.enemyPos:
-                self.enemyMove(enemy,player,msglog)
-                if str(self.currentTuple) in self.enemyPos:
-                    self.tuplemaze[str(self.currentTuple)].obsID = " "
-                    enemyGen = Enemy()
-                    msglog.addLog(player.name+" encountered a " + enemyGen.name)
-                    cls()
-                    print(msglog)
-                    sleep(1.3)
-                    battle_monsters(player, enemyGen, self,msglog)
-                    self.enemyPos.remove(str(self.currentTuple))
-                if enemy not in self.enemyPos:
-                    self.tuplemaze[enemy].obsID = " "
+            if enemyMove:
+                for enemy in self.enemyPos:
+                    self.enemyMove(enemy,player,msglog)
+                    if str(self.currentTuple) in self.enemyPos:
+                        self.tuplemaze[str(self.currentTuple)].obsID = " "
+                        enemyGen = Enemy()
+                        msglog.addLog(player.name+" encountered a " + enemyGen.name)
+                        cls()
+                        print(msglog)
+                        sleep(1.3)
+                        battle_monsters(player, enemyGen, self,msglog)
+                        self.enemyPos.remove(str(self.currentTuple))
+                    if enemy not in self.enemyPos:
+                        self.tuplemaze[enemy].obsID = " "
         if(msgWait):
             sleep(.3)
     def moveUp(self,player,msglog,DEBUG = False):
@@ -939,8 +940,8 @@ class Maze():
                 #sleep(1)
         elif singleEnemy in self.enemyPos and\
          round(self.getDistance(singleEnemy),3) == 1:#Enemy is one tile away 
-            print("close",singleEnemy)
-            sleep(1)
+            #print("close",singleEnemy)
+            #sleep(1)
             enemyGen = Enemy()
             msglog.addLog(player.name+" encountered a " + enemyGen.name)
             cls()
@@ -2265,6 +2266,9 @@ def main(maze,DEBUG = False):
     cls()
     while not confirmed:
         yesnoAnswer = False
+        enemyMove = False
+        if input("enable enemy movement: 'y' to enable\n").lower() == "y":
+            enemyMove = True
         name = input("What is your character's name? or 'skip'\n")
         if name != "skip":
             hp = float(input("Enter the hp for your character\n"))
@@ -2318,7 +2322,7 @@ def main(maze,DEBUG = False):
     #diff = cells - borders
     #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
-        newMaze.move(player,msgLog,DEBUG)
+        newMaze.move(player,msgLog,DEBUG,enemyMove)
         cls()
         newMaze.printMaze(player,msgLog)
         #newMaze.getBorder()
