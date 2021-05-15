@@ -7,7 +7,10 @@ or
 ### "python dungeon_crawl.py -filename maze3.txt"
 the -filename arg is optional and a maze will be generated for the user if a file is not provided
 ## Features to potentially add
-    
+
+## Features added as of 5/15/21
+  - Enemies can move by enabling them. Enemies farther than 1.42 tiles randomly move to an open space
+    enemies one tile away will attack the player
 ## Features and fixes as of 5/04/21
   - Added colors to the printMaze(), armor, weapons, and stat screen. Combat screen may be next
   - Changed the combat system from just taking an entity's strength and rolling from 90 to 110 %
