@@ -241,6 +241,7 @@ class Maze():
     endTuple (str):     The string of a tuple value in tuplemaze with obsID = E
     maxRow (int):       Total # of Cell rows in the maze used for iterating
     maxCol (int):       Total # of Cell columns in the maze used for iterating        
+    enemyPos (list):    list of keys that represent an Enemy encounter
     """
     WALL = "\033[1;4;37m"
     def __init__(self,mazefile,player):
@@ -259,6 +260,7 @@ class Maze():
         self.currentTuple = "not set"
         self.current = "not set"
         self.endTuple = "not set"
+        self.enemyPos = []
         row = -1
         col = 0
         with open(mazefile,"r") as f:
@@ -286,6 +288,7 @@ class Maze():
                         elif char == "B":
                             newCell = Cell(col,row,"B")
                             self.tuplemaze[strTuple] = newCell
+                            self.enemyPos.append("("+str(row)+ ", "+str(col)+")")
                         elif char == "/":
                             newCell = Cell(col,row,"/")
                             newCell.isInvisibleBorder = True
@@ -591,6 +594,11 @@ class Maze():
         resp = resp.lower()
         if resp == "dark" or resp == "light":
             self.visible(resp)
+        if resp == "enemy":
+            msglog.addLog(str(self.enemyPos))
+            for enemy in self.enemyPos:
+                print(enemy,self.getDistance(enemy))
+            sleep(2)
         if resp == "stats":
             player.hideStats = not player.hideStats
         elif resp == "logs":
@@ -673,7 +681,8 @@ class Maze():
         elif resp == "short":
             player.shortCom = not player.shortCom
         elif resp == "use":
-            item = input("What item are you using?\n")
+            item = input("What item are you using?\n"+\
+                "Food, torch, map, or bandage").lower()
             player.useItem(item,msglog,self)
         elif resp == "equip":
             player.equipGear(msglog)
@@ -715,8 +724,23 @@ class Maze():
         else: 
             msglog.addLog("Invalid Action")
             msgWait = True
-        if moved: #reduce hunger or health and cooldowns
+        if moved: #reduce hunger and health and cooldowns inc hp if hunger > 0
+            if player.hunger > 0:
+                if player.health+1 < player.maxhealth : player.health += 1
             self.afterMove(player,msglog,DEBUG)
+            for enemy in self.enemyPos:
+                self.enemyMove(enemy,player,msglog)
+                if str(self.currentTuple) in self.enemyPos:
+                    self.tuplemaze[str(self.currentTuple)].obsID = " "
+                    enemyGen = Enemy()
+                    msglog.addLog(player.name+" encountered a " + enemyGen.name)
+                    cls()
+                    print(msglog)
+                    sleep(1.3)
+                    battle_monsters(player, enemyGen, self,msglog)
+                    self.enemyPos.remove(str(self.currentTuple))
+                if enemy not in self.enemyPos:
+                    self.tuplemaze[enemy].obsID = " "
         if(msgWait):
             sleep(.3)
     def moveUp(self,player,msglog,DEBUG = False):
@@ -843,6 +867,8 @@ class Maze():
             print(msglog)
             sleep(1.3)
             battle_monsters(player, enemyGen, self,msglog)
+            if str(self.currentTuple) in self.enemyPos:
+                self.enemyPos.remove(str(self.currentTuple))
         self.revealSurround(torchOn) 
     def setBorders(self):
         """
@@ -881,7 +907,69 @@ class Maze():
             if self.tuplemaze[cell].isBorder:
                 borderList.append(cell)
         return borderList
+    def enemyMove(self,singleEnemy,player,msglog):
+        """
+        Makes the enemies randomly move around the maze
+        Enemies can only move to open tiles ' '
+        """
+        pos = singleEnemy.replace("(","")
+        pos = pos.replace(")","")
+        row = int(pos.split(",")[0])
+        col = int(pos.split(",")[1])
+        strTup = row,col
+        strTup = str(strTup)
+        if singleEnemy in self.enemyPos and \
+            round(self.getDistance(singleEnemy)) > 1.42 :
+            dirs = { "up":"("+str(row-1)+", "+str(col)+")",
+            "down":"("+str(row+1)+\
+            ", "+str(col)+")","left":"("+str(row)+", "+str(col-1)+")",\
+                 "right":"("+str(row)+", "+str(col+1)+")"}
+            validDir = []
+            for tile in dirs.keys():
+                if self.tuplemaze[dirs[tile]].obsID == " ":
+                    validDir.append(tile)
+            if len(validDir) > 0:
+                move = random.choice(validDir)
+                #print(move)
+                strTup = dirs[move]
+                self.tuplemaze[singleEnemy].obsID = " "
+                self.tuplemaze[dirs[move]].obsID = "B"
+                self.enemyPos.remove(singleEnemy)
+                self.enemyPos.append(strTup)
+                #sleep(1)
+        elif singleEnemy in self.enemyPos and\
+         round(self.getDistance(singleEnemy),3) == 1:#Enemy is one tile away 
+            print("close",singleEnemy)
+            sleep(1)
+            enemyGen = Enemy()
+            msglog.addLog(player.name+" encountered a " + enemyGen.name)
+            cls()
+            print(msglog)
+            sleep(1.3)
+            battle_monsters(player, enemyGen, self,msglog)
+            self.tuplemaze[singleEnemy].obsID == " "
+            self.enemyPos.remove(singleEnemy)
+    def getDistance(self,singleEnemy):
+        """
+        Calculates the distance between an enemy and the player
+        __author__ = 'Nicholas Koy'
+        Args: singleEnemy (str): cell representing an enemy
 
+        Returns: distance (float) how far the two entities are
+        """
+        pos = singleEnemy.replace("(","")
+        pos = pos.replace(")","")
+        row = int(pos.split(",")[0])
+        col = int(pos.split(",")[1])
+        curPos = str(self.currentTuple)
+        curPos = curPos.replace("(","")
+        curPos = curPos.replace(")","")
+        curRow = int(curPos.split(",")[0])
+        curCol = int(curPos.split(",")[1])
+        diffRow = curRow - row
+        diffCol = curCol - col
+        distance = (diffRow **2 + diffCol**2)** .5
+        return distance
     def revealSurround(self,torch = False):
         """
         Reveals the surrounding maze area (one cell away from the player 
@@ -1113,7 +1201,7 @@ class Player:
         Side effects: Uses the item. Different items have different effects
                       May lower quantity
         """
-        validItems = ["torch","bandage","map"]
+        validItems = ["food","torch","bandage","map"]
         if battle:
             validItems = ["torch","bandage"]
 
@@ -1130,6 +1218,24 @@ class Player:
                 elif item == "map":
                     maze.revealMap(self)
                     msgLog.addLog(self.name + " reads a map")
+                elif item == "food":
+                    validFood = ["apple","bread","carrot","Mystery Meat"]
+                    for food in validFood:
+                        if food not in self.inventory.keys():
+                            validFood.remove(food)
+                        elif self.inventory[food] == 0:
+                            validFood.remove(food)
+                    if len(validFood) > 0:
+                        message = "What are you eating: "
+                        for food in validFood:
+                            message += food + " "
+                        message = message.strip()
+                        choice = input(message)
+                        if choice in validFood:
+                            self.inventory[choice] -= 1
+                            self.health += self.maxhealth * .15
+                            if self.health > self.maxhealth:
+                                self.health = self.maxhealth
                 self.inventory[item] -= 1
             else:
                 msgLog.addLog("You have no more to use")
