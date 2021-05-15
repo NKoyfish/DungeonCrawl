@@ -7,7 +7,11 @@ or
 ### "python dungeon_crawl.py -filename maze3.txt"
 the -filename arg is optional and a maze will be generated for the user if a file is not provided
 ## Features to potentially add
-
+  - leveling system for player and attribute point speccing.
+  - Allow mazes to have multiple floors to clear
+  - Better enemy spawn conditions. Encountering a Level 5 enemy while the player has no
+    gear is almost always a death sentence
+  - More enemy types and different scaling multipliers for different races
 ## Features added as of 5/15/21
   - Enemies can move by enabling them. Enemies farther than 1.42 tiles randomly move to an open space
     enemies one tile away will attack the player
