@@ -37,6 +37,9 @@ from math import factorial
 DEBUG = False
 SHOW_N_MESSAGES = 2
 def cls():
+    """
+    clears the terminal screen, supports Mac and PC
+    """
     os.system('cls' if os.name == 'nt' else 'clear')
 class MessageLog():
     """
@@ -429,8 +432,10 @@ class Maze():
                         msglog.addLog(player.name +" broke wall at "+\
                             dirs[choice])
                         print(msglog)
-            else: print("No wall to break")
-        else: print("Break on cooldown for",player.abilityList["break"],"turns")
+            else: msglog.addLog("No wall to break")
+        else: msglog.addLog("Break on cooldown for "\
+            +str(player.abilityList["break"])+" turns")
+    sleep(2)
     #Ali
     def generateTreasure(self,player,msgLog : MessageLog()):
         """
@@ -523,7 +528,7 @@ class Maze():
                         jumpable.append(jumpCheck)
             if len(jumpable) > 1:
                 while not choose:
-                    cls()
+                    #cls()
                     strjump = ""
                     for direc in jumpable:
                         strjump += (direc + " ")
@@ -597,36 +602,53 @@ class Maze():
             player.addInventoryWearable(temp)
             print(msglog)
         #DONT GRADE THIS ELIF
+        #This is basically just an endless combat sim
         elif DEBUG and resp == "combatplus":
+            restsLeft = 5
             lv = int(input("what level?\n"))
-            e1 = Enemy()
-            e1.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
-            e1.inventory["armor"]["equip"]["Boots"] = Gear("Boots","Rare",lv)
-            e1.inventory["armor"]["equip"]["Gloves"] = Gear("Helmet","Rare",lv)
-            e1.inventory["armor"]["equip"]["Body Armor"] = Gear("Helmet","Rare",lv)
-            e1.inventory["sword"]["equip"] = Gear("Sword","Rare",lv)
             player.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
             player.inventory["armor"]["equip"]["Boots"] = Gear("Boots","Rare",lv)
             player.inventory["armor"]["equip"]["Gloves"] = Gear("Helmet","Rare",lv)
             player.inventory["armor"]["equip"]["Body Armor"] = Gear("Helmet","Rare",lv)
             player.inventory["sword"]["equip"] = Gear("Sword","Rare",lv)
-            recalcDefense(e1)
             recalcDefense(player)
-            recalcAttack(e1)
             recalcAttack(player)
-            #print(e1.gearDefense)
-            #print(player.gearDefense)
-            print(e1.gearOffense)
             print(player.gearOffense)
-            while( input()!='c'):
-                print(calcDamage(player,e1))
-                print("att",player.gearOffense)
-                print("def",player.gearDefense)
-                print("enemy")
-                print("att",e1.gearOffense)
-                print("def",e1.gearDefense)
-            sleep(4)
-        elif DEBUG and resp == "armor":
+            battleRest = ""
+            battleRest = input("Battle 'b', Rest 'r', equip 'e', or 'c' to quit\n")
+            while battleRest != "c":
+                if battleRest == "b":
+                    e1 = Enemy()
+                    e1.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
+                    e1.inventory["armor"]["equip"]["Boots"] = Gear("Boots","Rare",lv)
+                    e1.inventory["armor"]["equip"]["Gloves"] = Gear("Helmet","Rare",lv)
+                    e1.inventory["armor"]["equip"]["Body Armor"] = Gear("Helmet","Rare",lv)
+                    e1.inventory["sword"]["equip"] = Gear("Sword","Rare",lv)
+                    #print(calcDamage(player,e1))
+                    #print("att",player.gearOffense)
+                    #print("def",player.gearDefense)
+                    print("enemy")
+                    print("att",e1.gearOffense)
+                    print("def",e1.gearDefense)
+                    recalcAttack(e1)
+                    recalcDefense(e1)
+                    sleep(2)
+                    while (player.health > 0 and e1.health > 0):
+                        battle_monsters(player,e1,self,msglog)
+                    if player.health < 0:
+                        break
+                elif battleRest == "r" and restsLeft > 0:
+                    player.health += round(.5 * player.maxhealth)
+                    if player.health > player.maxhealth:
+                        player.health = player.maxhealth
+                    restsLeft -=1
+                    print("Rests left: ",restsLeft)
+                elif battleRest == "e":
+                        player.equipGear(msglog)
+                battleRest = input("Battle 'b', Rest 'r', equip 'e', or 'c' to quit\n")
+                sleep(2)
+                cls()
+        elif DEBUG and resp == "armor":#adds armor to inv for the player test
             lv = int(input("up to what level?\n"))
             rarity = ["Ultra Rare","Legendary","Common","Uncommon","Rare"]
             
@@ -656,7 +678,7 @@ class Maze():
         elif resp == "equip":
             player.equipGear(msglog)
         elif resp == "unequip":
-            gearSlot = input("Which item to unequip")
+            gearSlot = input("Which item to unequip\n")
             player.unequipGear(gearSlot,msglog)
         elif resp in ["u","up"]:
             self.moveUp(player,msglog,DEBUG)
@@ -776,7 +798,7 @@ class Maze():
         """
         Checks the new tile the player has moved to.
         DONT COUNT TOWARDS 8 UNIQUE METHODS
-        MAINLY FOR PYTEST EASY TESTING
+        MAINLY FOR PYTEST EASY TESTING SINCE main() usually covers this
         """
         for ability in player.abilityList.keys():
             if player.abilityList[ability] > 0:
@@ -820,7 +842,7 @@ class Maze():
             cls()
             print(msglog)
             sleep(1.3)
-            battle_monsters(player, enemyGen,msglog)
+            battle_monsters(player, enemyGen, self,msglog)
         self.revealSurround(torchOn) 
     def setBorders(self):
         """
@@ -1073,7 +1095,7 @@ class Player:
                 score += (125 * self.inventory[i])
             elif i == "large core":
                 score += (200 * self.inventory[i])
-        score += 100 * self.battlesWon
+        score += (100 * self.battlesWon)
         if self.battlesFought != 0:
             score = int(score * (self.battlesWon/self.battlesFought))
         else:
@@ -1081,7 +1103,7 @@ class Player:
         
         return score
 
-    def useItem(self,item,msgLog,maze):
+    def useItem(self,item,msgLog,maze,battle = False):
         """
         __author__ = 'Nelson Contreras','Nicholas Koy'
         Players can use certain items to aid them in their travels
@@ -1092,16 +1114,22 @@ class Player:
                       May lower quantity
         """
         validItems = ["torch","bandage","map"]
+        if battle:
+            validItems = ["torch","bandage"]
+
         if item in validItems:
             if item in self.inventory.keys() and self.inventory[item] > 0:
                 if item == "torch":
                     self.torchLeft = randint(12,20)
+                    msgLog.addLog(self.name + " burns a torch")
                 elif item == "bandage":
                     self.health += int(self.maxhealth * .25)
                     if self.health > self.maxhealth:
                         self.health = self.maxhealth
-                else:
+                    msgLog.addLog(self.name + " bandages up their wounds")
+                elif item == "map":
                     maze.revealMap(self)
+                    msgLog.addLog(self.name + " reads a map")
                 self.inventory[item] -= 1
             else:
                 msgLog.addLog("You have no more to use")
@@ -1197,7 +1225,7 @@ class Player:
                             len(self.inventory["sword"]["unequip"])]
                     del self.inventory["armor"]["unequip"][item - \
                         len(self.inventory["sword"]["unequip"])]
-                    action = "Swapped " + armorType + "to " + \
+                    action = "Swapped " + armorType + " to " + \
                         tempArmor.name + " "
                 else:
                     self.inventory["armor"]["equip"][armorType]= \
@@ -1205,7 +1233,7 @@ class Player:
                             len(self.inventory["sword"]["unequip"])]
                     del self.inventory["armor"]["unequip"][item - \
                         len(self.inventory["sword"]["unequip"])]
-                    action = "Equipped " + armorName + " " + "to " +\
+                    action = "Equipped " + armorName + " to " +\
                          armorType + " slot "
                 recalcAttack(self)
                 recalcDefense(self)
@@ -1268,7 +1296,7 @@ class Enemy:
     type (str) - type of monster being battled
     health (int) - this will be the monsters health
     speed (int) - this will be the ability of the monsters speed
-    attack (float) - this will be the monsters attack damage.
+    attack (float) - this will be the monsters base attack damage.
     inventory (Dict): will store the monster's equipped gear for damage calc
     """
     def __str__(self):
@@ -2122,9 +2150,11 @@ def main(maze,DEBUG = False):
                     reveals maze tiles as player progresses
     Raises: ValueError if stat inputs are 0 or negative
     """
+    remove = False
     DEBUG = DEBUG
     if maze is None:
         maze = generateSimpleMaze()
+        remove = True
     confirmed = False
     cls()
     while not confirmed:
@@ -2173,6 +2203,8 @@ def main(maze,DEBUG = False):
     msgLog = MessageLog()
     player = Player(name,hp,attack,speed,hunger)
     newMaze= Maze(maze,player)
+    if remove:
+        os.remove("generated.txt")
     #print(f"Max c: {newMaze.maxCol}, Max r: {newMaze.maxRow}")
     newMaze.printMaze(player,msgLog)
     #borders = set(newMaze.getBorder())
@@ -2205,6 +2237,7 @@ def main(maze,DEBUG = False):
 def showBoth(entity1,entity2):
     """
     Displays both the player and monster hp percentages neatly in color
+    and dynamically sets the size of the menu based on name lengths
     __author__ = 'Nicholas Koy'
     Args:
         entity1 (Player or Enemy): The main entity (usually a Player)
@@ -2281,15 +2314,15 @@ def strike(entity1,entity2,msgLog):
         critDmg = 1.5
     if randint(0,100) <= baseAccuracy * 100:#accuracy roll
         attack = calcDamage(entity1,entity2)
-        low = int(entity1.attack*.9)
-        high = int(entity1.attack*1.1)
+        low = int(attack*.9)
+        high = int(attack*1.1)
         if attack > high:
             high = attack
         if DEBUG:
             print("hypothetical max", 1.1*attack)
             print("hypothetical max crit", critDmg *1.1*attack)
             print("low roll min",low)
-        #sleep(3)
+        sleep(1)
         damage = critDmg * randint(int(low),int(high))
         entity2.health -= damage
         cls()
@@ -2311,7 +2344,7 @@ def strike(entity1,entity2,msgLog):
         return True
     else:
         return False   
-def battle_monsters(entity1, entity2, msgLog : MessageLog()):
+def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
     """
     Starts the battle between player and monster until one dies
 
@@ -2319,7 +2352,9 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
         player (Player) - this will be the player attacking the monster
         the monster.
         monster (Enemy) - this will be monster attacking the player
-    
+        maze (Maze) where the battle is taking place
+        msgLog (Message Log) - Stores actions
+
     __authors__ =  'Nelson Contreras', 'Nicholas Koy'
     
     """
@@ -2366,10 +2401,13 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                             entity2.battlesWon += 1
                             entity2.battlesFought += 1
                         sleep(2)
-                else: #E1 strike didnt kill
+                else: #E1 strike does kill
                     print(msgLog)
                     winner = True
                     battleEnd = True
+                    if isinstance(entity1,Player):
+                            entity1.battlesWon += 1
+                            entity1.battlesFought += 1
                     sleep(2)
             else:#E2 hits first
                 if not strike(entity2,entity1,msgLog): #E2 didnt kill
@@ -2380,8 +2418,8 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                         winner = True
                         battleEnd = True
                         if isinstance(entity1,Player):
-                            entity2.battlesWon += 1
-                            entity2.battlesFought += 1
+                            entity1.battlesWon += 1
+                            entity1.battlesFought += 1
                 else: #E2 killed e1
                     print(msgLog)
                     winner = True
@@ -2414,8 +2452,8 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
             sleep(1)
             
         elif resp == "u":
-            item = input("Use what?\ntorch, bandage, or map?\n")
-            entity1.useItem(item,msgLog)
+            item = input("Use what?\ntorch or bandage\n")
+            entity1.useItem(item,msgLog,maze)
             sleep(1)
         elif resp == "r":
             successChance = .07 * (8-entity2.montype) + \
@@ -2443,9 +2481,12 @@ def battle_monsters(entity1, entity2, msgLog : MessageLog()):
                     if not entity1.hideStats:
                         print(entity1)
                     print(msgLog)
-                else:
+                else: #E2 killed e1
                     winner = True
                     battleEnd = True
+                    if not entity1.hideStats:
+                        print(entity1)
+                    print(msgLog)
             #may want to clear here
             #print(msgLog)
             sleep(1.6)
