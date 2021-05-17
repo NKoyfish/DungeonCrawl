@@ -91,7 +91,7 @@ def test_moveAndBattle(capsys):
         #Only the main script from the module can end the game
     with mock.patch("builtins.input",side_effect = ["l"]):
         testMaze.move(player,msglog)
-        print(msglog.log)
+        #print(msglog.log)
         combined ="".join(msglog.log)
         assert "picked up" in combined, "Something should have been picked up"
     with mock.patch("builtins.input",side_effect = ["l","a"]):
@@ -123,14 +123,48 @@ def test_breakWall(capsys):
         testMaze.move(player,msglog)
         combined ="".join(msglog.log)
         assert "broke" in combined
-        err = ""
-        out,err = capsys.readouterr()
-        assert "cooldown" in str(out)
+        assert "cooldown" in combined
         testMaze.move(player,msglog)
     with mock.patch("builtins.input",side_effect = ["b"]):
         testMaze.move(player,msglog)
-        out,err = capsys.readouterr()
-        assert "No wall to break" in str(out)
-        
-        
-
+        combined = "".join(msglog.log)
+        assert "No wall to break" in combined
+def test_jumpWall(capsys):
+    outerr = capsys.readouterr()
+    p = "jumpBreak.txt" 
+    msglog = dg.MessageLog()
+    name,hp,attack,speed,hunger = "Bob",1000,2000,3000,4000
+    player = dg.Player(name,hp,attack,speed,hunger)
+    testMaze = dg.Maze(p,player)
+    with mock.patch("builtins.input",side_effect = ["r","j","right"]):
+        testMaze.move(player,msglog)
+        testMaze.move(player,msglog)
+        assert str(testMaze.currentTuple) == "(1, 4)", "Didn't jump wall"
+def test_useItem(capsys):
+    outerr = capsys.readouterr()
+    p = "jumpBreak.txt" 
+    msglog = dg.MessageLog()
+    name,hp,attack,speed,hunger = "Bob",1000,2000,3000,4000
+    player = dg.Player(name,hp,attack,speed,hunger)
+    player.health = 1
+    testMaze = dg.Maze(p,player)
+    actions = ["r","rest","use","food","apple","use","bandage","use","map"]
+    with mock.patch("builtins.input",side_effect = actions):
+        testMaze.move(player,msglog)
+        assert player.health == 2, "should have healed 1 health after moving"
+        testMaze.move(player,msglog)
+        assert player.health == 102, "should have healed 10 perc hp after rest"
+        assert player.hunger == 3989, "rest -10 hunger: move -1 hunger"
+        testMaze.move(player,msglog)
+        assert player.health == 117, "should have healed 15 hp from eating apple"
+        assert player.hunger == 4000, "full belly after eating"
+        testMaze.move(player,msglog)
+        assert player.health == 117 + 250, "bandage should heal 250"
+        assert player.inventory["bandage"] == 0, "bandage should be 0"
+        assert player.inventory["food"]["apple"] == 0, "apple should be 0"
+        testMaze.move(player,msglog)
+        allRevealed = True
+        for cell in testMaze.tuplemaze.keys():
+            if not testMaze.tuplemaze[cell].revealed:
+                allRevealed = False
+        assert allRevealed, "Every cell should be revealed now"
