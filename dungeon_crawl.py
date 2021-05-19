@@ -11,10 +11,10 @@ enough. Players have an inventory of tools that may aid them in their journey.
 
 Note for 326 Grader from Nicholas Koy: 
     The Gear Class, Loot generation, Combat system, and Colored prints are very 
-    overkill.Please pretend as if the they were not part of the project. I 
+    overkill. Please pretend as if the they were not part of the project. I 
     enjoyed making them and would prefer those methods involving the inventory
     or __str__() of many methods and functions to just be normal. I may be able
-    to find a wayin the future to toggle the simple damage calculations and
+    to find a way in the future to toggle the simple damage calculations and
     inventory system or create a fork where everything and meets the final
     rubric.
 
@@ -318,8 +318,9 @@ class Maze():
         self.setBorders()
     def visible(self,mode):
         """
+        DONT COUNT TOWARDS 8 METHODS
         Changes wall color from white to black
-        or black to white
+        or black to white.
         """
         if mode == "light":
             Maze.WALL = "\033[1;4;37m"
@@ -335,7 +336,7 @@ class Maze():
         __author__ = 'Nicholas Koy'
         Args: player (Player):  player participating in the maze
               msgLog (MessageLog): prints past actions after maze
-              bool (Boolean):   Reveal entire maze if True
+              boole (Boolean):   Reveal entire maze if True
 
         Side effects: prints to stdout
         """
@@ -368,10 +369,9 @@ class Maze():
                             print(self.tuplemaze[name],end ="")
                     else:print(self.tuplemaze[name].obsID,end ="")
         print()
-    
     def writeMaze(self,file):
         """
-        Converts a Maze object back into a textfile. Used to append new rooms
+        Converts a Maze object back into a textfile. Used to generate a maze
         __author__ = 'Nicholas Koy'
         Parameters:
                 file: (str) name to the file to be created temporarily
@@ -392,8 +392,7 @@ class Maze():
                         f.write(self.tuplemaze[strTup].obsID)
                         if c != self.maxCol+1:
                             f.write("\n")
-                maxrowcount +=1
-            
+                maxrowcount +=1        
     def breakWall(self,player, msglog: MessageLog()):
         """
         breakWall allows a player to destroy a non bordering wall
@@ -438,8 +437,6 @@ class Maze():
             else: msglog.addLog("No wall to break")
         else: msglog.addLog("Break on cooldown for "\
             +str(player.abilityList["break"])+" turns")
-    sleep(2)
-    #Ali
     def generateTreasure(self,player,msgLog : MessageLog()):
         """
         Generates treasure for the player to add to their inventory
@@ -489,7 +486,6 @@ class Maze():
             player.inventory[addItem] = quantRoll
         else:
             player.inventory[addItem] += quantRoll
-    #Noble
     def revealMap(self,player):
         """
         This reveals the game map if it is in the players inventory
@@ -498,10 +494,9 @@ class Maze():
             player(Player): The player in the game
         Side effects: Makes the map entire layout visible and reveals treasure
         """
-        if player.inventory["map"] == 1:
+        if player.inventory["map"] >= 1:
             for cell in self.tuplemaze.keys():
-                self.tuplemaze[cell].revealed = True
-    #Noble
+                self.tuplemaze[cell].revealed = True 
     def jumpWall(self, player,msgLog : MessageLog()):
         """
         this enables players who have the ability to jump over walls in the
@@ -512,6 +507,7 @@ class Maze():
             player(String): The name of the player in the game
             it will evaluate the player and see if they have the ability to do
              so and if they can to execute, if not then the the code will break
+        Side Effect: Changes player position if a valid wall is chosen
         """
         row,col = self.currentTuple
         choose = False
@@ -562,7 +558,6 @@ class Maze():
             j = "jump"
             msgLog.addLog("Jump is still on cooldown for "+\
                 str(player.abilityList[j]) +  "turns")
-    #Nick 
     def move(self,player,msglog,DEBUG = False,enemyMove = False):
         """
         A players "turn" in a maze. Here they can decide to either move, rest,
@@ -579,7 +574,7 @@ class Maze():
         """
         if player.shortCom:
             ask = "\n(U),(D),(L),(R),(Rest),(B),(J),(Use),(P)" +\
-                "(stats),(short),(logs)\n"
+                "(stats),(use),(equip),(dark),(light),(short),(logs)\n"
         else: ask = "\nMove where? (U)p,(D)own,(L)eft, or (R)ight\n" +\
         "Other: (Rest), (B)reak Wall, (J)ump Wall, (use) item, or (P)osition" +\
         "\nShow (Inventory),(equip) gear \n" +\
@@ -624,7 +619,7 @@ class Maze():
             print(player.gearOffense)
             battleRest = ""
             battleRest = input("Battle 'b', Rest 'r', equip 'e', or 'c' to quit\n")
-            while battleRest != "c":
+            while battleRest != "c" and player.health > 0:
                 if battleRest == "b":
                     e1 = Enemy()
                     e1.inventory["armor"]["equip"]["Helmet"] = Gear("Helmet","Rare",lv)
@@ -653,7 +648,8 @@ class Maze():
                     print("Rests left: ",restsLeft)
                 elif battleRest == "e":
                         player.equipGear(msglog)
-                battleRest = input("Battle 'b', Rest 'r', equip 'e', or 'c' to quit\n")
+                if player.health > 0:
+                    battleRest = input("Battle 'b', Rest 'r', equip 'e', or 'c' to quit\n")
                 sleep(2)
                 cls()
         elif DEBUG and resp == "armor":#adds armor to inv for the player test
@@ -675,7 +671,8 @@ class Maze():
                 sleep(3)
             elif lookup == "items":
                 for item in player.inventory.keys():
-                    if item != "sword" and item != "armor":
+                    if item != "sword" and item != "armor" and \
+                        player.inventory[item] != 0:
                         print(item,":",player.inventory[item])
                 sleep(4)
         elif resp == "short":
@@ -701,12 +698,12 @@ class Maze():
         elif resp in ["right","r"]:
             moved = True
             self.moveRight(player,msglog,DEBUG)
-        elif resp == "j": #jumpWall
+        elif resp in ["j","jump"]: #jumpWall
             self.jumpWall(player,msglog)
             moved = True
-        elif resp == "b": #breakWall
+        elif resp in ["b","break"]: #breakWall
             self.breakWall(player,msglog)
-        elif resp == "p": # used primarily for debugging
+        elif resp in ["p","pos"]: # used primarily for debugging
             msglog.addLog("You check your surroundings, you are at "+\
                 str(self.currentTuple))
         elif resp == "rest":
@@ -1060,7 +1057,7 @@ class Player:
                 "Boots":None,"Ring":None,"Amulet":None,"Gloves":None}, \
                 "unequip": []}, 
         "small core": 0, "medium core":0, "large core": 0, "torch": 1,
-        "bandage":1}
+        "bandage":1, "food":{"apple":1}}
         self.abilityList = {"break": 0, "jump": 0}
         self.name = name
         self.health = health
@@ -1151,7 +1148,6 @@ class Player:
                 row = x + " " * (maxFrame - 9 - len(rightrow)) + rightrow+" ▯\n"
                 printFrame += row 
         return (printFrame)
-    #Ali
     def getScore(self):
         """
         __author__ = 'Ali Iqbal'
@@ -1160,36 +1156,21 @@ class Player:
 
         Returns: Integer score of player
         """
+        itemWorth = {"Diamond":100,"Gold":80,"Emerald":60,"Silver":50,\
+            "Bronze":35,"Amber":20,"Nugget":10,"small core": 75,\
+            "medium core": 125,"large core":200}
         score = 0
         for i in self.inventory.keys():
-            if i == "Diamond":
-                score += self.inventory[i]*100
-            elif(i == "Gold"):
-                score += self.inventory[i]*80
-            elif(i == "Emerald"):
-                score += self.inventory[i]*60
-            elif(i == "Silver"):
-                score += self.inventory[i]*50
-            elif(i == "Bronze"):
-                score += self.inventory[i]*35
-            elif(i == "Copper"):
-                score += self.inventory[i]*20
-            elif(i == "Amber"):
-                score += self.inventory[i]*15
-            elif(i == "Nugget"):
-                score += self.inventory[i]*10
-            elif i == "small core":
-                score += (75 * self.inventory[i])
-            elif i == "medium core":
-                score += (125 * self.inventory[i])
-            elif i == "large core":
-                score += (200 * self.inventory[i])
+            if i in itemWorth.keys():
+                score+= itemWorth[i] * self.inventory[i]
         score += (100 * self.battlesWon)
         if self.battlesFought != 0:
+            mult = self.battlesWon/self.battlesFought
+            if mult == 1:
+                mult = 1.15
             score = int(score * (self.battlesWon/self.battlesFought))
-        else:
+        elif self.battlesFought > 0:
             score = int(score * .75) 
-        
         return score
 
     def useItem(self,item,msgLog,maze,battle = False):
@@ -1205,39 +1186,56 @@ class Player:
         validItems = ["food","torch","bandage","map"]
         if battle:
             validItems = ["torch","bandage"]
-
+        choice = ""
         if item in validItems:
-            if item in self.inventory.keys() and self.inventory[item] > 0:
-                if item == "torch":
+            if item in self.inventory.keys():
+                use = False
+                if item == "torch" and self.inventory[item] > 0:
                     self.torchLeft = randint(12,20)
                     msgLog.addLog(self.name + " burns a torch")
-                elif item == "bandage":
+                    use = True
+                elif item == "bandage" and self.inventory[item] > 0:
                     self.health += int(self.maxhealth * .25)
                     if self.health > self.maxhealth:
                         self.health = self.maxhealth
                     msgLog.addLog(self.name + " bandages up their wounds")
-                elif item == "map":
+                    use = True
+                elif item == "map" and self.inventory[item] > 0:
                     maze.revealMap(self)
                     msgLog.addLog(self.name + " reads a map")
                 elif item == "food":
-                    validFood = ["apple","bread","carrot","Mystery Meat"]
-                    for food in validFood:
-                        if food not in self.inventory.keys():
-                            validFood.remove(food)
-                        elif self.inventory[food] == 0:
-                            validFood.remove(food)
+                    foodStats = {"apple":(15,15),"bread":(30,20),\
+                    "mystery meat":(randint(0,50),randint(5,20)),\
+                        "carrot":(10,15)}
+                    validFood = []
+                    for food in self.inventory["food"].keys():
+                        if self.inventory["food"][food] > 0:
+                            validFood.append(food)
+                    #msgLog.addLog(str(validFood))
                     if len(validFood) > 0:
-                        message = "What are you eating: "
+                        message = "What are you eating: 'c' to cancel\n"
                         for food in validFood:
-                            message += food + " "
-                        message = message.strip()
+                            message += food + ","
+                        message = message.rstrip(',') + "\n"
                         choice = input(message)
                         if choice in validFood:
-                            self.inventory[choice] -= 1
-                            self.health += self.maxhealth * .15
+                            self.inventory["food"][choice] -= 1
+                            self.health += foodStats[choice][1]
+                            self.hunger += foodStats[choice][0]
                             if self.health > self.maxhealth:
                                 self.health = self.maxhealth
-                self.inventory[item] -= 1
+                            if self.hunger > self.maxhunger:
+                                self.hunger = self.maxhunger
+                            use = True
+                            msgLog.addLog(choice+ " was eaten by " + self.name)
+                        elif choice not in validFood:
+                            msgLog.addLog("You decide to not eat")
+                        else:
+                            msgLog.addLog("You have no food left to eat")
+                if item != "food" and use:
+                    self.inventory[item] -= 1
+                elif item == "food" and use:
+                    self.inventory["food"][choice]
             else:
                 msgLog.addLog("You have no more to use")
         else:
@@ -1408,7 +1406,7 @@ class Enemy:
     """
     def __str__(self):
         return self.name
-    def __init__(self,diff = 1):
+    def __init__(self):
         """
         Explaination: 
             created a list called monsters which will hold all of the monsters 
@@ -1450,7 +1448,7 @@ class Enemy:
             self.attack = randint(80,100)
             self.speed = randint(60,70)
             self.name = "Lv 5 " + self.name
-        self.health = factorial(self.montype) * 5 + 100
+        self.health = 10 * self.montype + factorial(self.montype) * 3 + 100
         #balance
         self.attack = self.attack* 2 / 3 
         if "Zombie" in self.name:
@@ -2056,7 +2054,8 @@ def generateLoot(player,msgLog,enemy = None):
             msgLog (MessageLog): Logs the action
             enemy (None or Enemy):  If item loot generated via enemy death
                                     then this should be an Enemy for +weight
-    adds a randomly chosen item base type to the player's inventory         
+    Side Effect:    adds a randomly chosen item base type or food item
+                    to the player's inventory         
     """
     lootRoll = 0
     rollFive = 0
@@ -2081,7 +2080,7 @@ def generateLoot(player,msgLog,enemy = None):
     else:
         rarity = "Common"
     gearOrConsume = randint(0,5)
-    if gearOrConsume > 3:
+    if gearOrConsume >= 3:
         lootRoll = random.choice(["Body Armor","Gloves","Helmet","Sword","Boots"])
         drop = Gear(lootRoll,rarity,montype)
         player.addInventoryWearable(drop)
@@ -2089,10 +2088,10 @@ def generateLoot(player,msgLog,enemy = None):
         drop = random.choice(["torch","bandage","torch","map","key","food"])
         if drop == "food":
             drop =random.choice(["apple","bread","carrot","Mystery Meat"])
-            if drop in player.inventory.keys():
-                player.inventory[drop]+= 1
+            if drop in player.inventory["food"].keys():
+                player.inventory["food"][drop]+= 1
             else:
-                player.inventory[drop] = 1
+                player.inventory["food"][drop] = 1
     else:
         cores = ["small core","medium core","large core"]
         drop = cores[random.choice([0,0,0,1,1,2])]
@@ -2315,17 +2314,12 @@ def main(maze,DEBUG = False):
     newMaze= Maze(maze,player)
     if remove:
         os.remove("generated.txt")
-    #print(f"Max c: {newMaze.maxCol}, Max r: {newMaze.maxRow}")
     newMaze.printMaze(player,msgLog)
-    #borders = set(newMaze.getBorder())
-    #cells = set(newMaze.tuplemaze.keys())
-    #diff = cells - borders
-    #print(diff)
     while str(newMaze.currentTuple) != str(newMaze.endTuple) and player.health > 0:
         newMaze.move(player,msgLog,DEBUG,enemyMove)
         cls()
         newMaze.printMaze(player,msgLog)
-        #newMaze.getBorder()
+        if player.health < 0: player.health = 0
     if player.health <= 0:
         cls()
         msgLog.addLog("Game Over!")
@@ -2480,11 +2474,6 @@ def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
                 print(entity1)
             playerPresent = True
 
-        #performs one more check
-        if entity1.health <= 0:
-            msgLog.addLog(entity1.name + " is dead! check 1363 if it got here"+\
-            "then something went wrong")
-            break
         actionChosen = False
         if not playerPresent: actionChosen = True
         while not (actionChosen) and playerPresent and not battleEnd:
@@ -2510,6 +2499,8 @@ def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
                         if isinstance(entity2,Player):
                             entity2.battlesWon += 1
                             entity2.battlesFought += 1
+                        else:
+                            entity1.health = 0
                         sleep(2)
                 else: #E1 strike does kill
                     print(msgLog)
@@ -2518,6 +2509,8 @@ def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
                     if isinstance(entity1,Player):
                             entity1.battlesWon += 1
                             entity1.battlesFought += 1
+                    else:
+                            entity2.health = 0
                     sleep(2)
             else:#E2 hits first
                 if not strike(entity2,entity1,msgLog): #E2 didnt kill
@@ -2530,6 +2523,8 @@ def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
                         if isinstance(entity1,Player):
                             entity1.battlesWon += 1
                             entity1.battlesFought += 1
+                        else:
+                            entity2.health = 0
                 else: #E2 killed e1
                     print(msgLog)
                     winner = True
@@ -2537,6 +2532,8 @@ def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
                     if isinstance(entity2,Player):
                             entity2.battlesWon += 1
                             entity2.battlesFought += 1
+                    else:
+                            entity1.health = 0
                     sleep(2)
             if winner:
                 cls()
@@ -2545,9 +2542,11 @@ def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
                 if entity1.health > entity2.health: 
                     who = entity1.name
                     loser = entity2.name
+                    entity2.health = 0
                 else: 
                     who = entity2.name
                     loser = entity1.name
+                    entity1.healtyh = 0
                 msgLog.addLog(who + " killed " + loser)
             showBoth(entity1,entity2)
             print(msgLog)
@@ -2595,6 +2594,7 @@ def battle_monsters(entity1, entity2, maze, msgLog : MessageLog()):
                     winner = True
                     battleEnd = True
                     if not entity1.hideStats:
+                        if entity1.health < 0: entity1.health = 0
                         print(entity1)
                     print(msgLog)
             #may want to clear here
