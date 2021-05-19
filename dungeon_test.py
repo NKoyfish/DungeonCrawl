@@ -127,6 +127,7 @@ def test_mazeInit():
 def test_move():
     """
     Uses moveDir() to check movement and log output on wall bump
+    Honestly should delete now that I learned how to use capsys and mock
     __author__ = 'Nicholas Koy'
     """
     p = "test_maze.txt" 
