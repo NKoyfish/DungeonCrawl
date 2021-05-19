@@ -10,8 +10,11 @@ import random
 from random import randint
 from math import factorial
 
-#Nelson Contreras - Worked on the Enemy class pytest
 def test_enemyInit():
+    """
+    Does an enemy generate correctly?
+    __author__ = 'Nelson Contreras'
+    """
     monsterType = random.choice([0,1,2,3,4])
     monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
             "Skeleton", "Ghoul", "Lizardman", "Spectre"]
@@ -84,8 +87,11 @@ def test_enemyInit():
     assert storeInventory == storeInventory
     assert gear == gear 
     assert inventory == inventory
-
 def test_playerInit():
+    """
+    Checks that player initialized correctly
+    __author__ = 'Nicholas Koy'
+    """
     name,hp,attack,speed,hunger = "Bob",1,2,3,4
     player = dg.Player(name,hp,attack,speed,hunger)
     assert hasattr(player,"name")
@@ -121,6 +127,7 @@ def test_mazeInit():
 def test_move():
     """
     Uses moveDir() to check movement and log output on wall bump
+    __author__ = 'Nicholas Koy'
     """
     p = "test_maze.txt" 
     msglog = dg.MessageLog()
@@ -137,6 +144,7 @@ def test_move():
 def test_move2():
     """
     Will move() work when the player walks on a stair case?
+    __author__ = 'Nicholas Koy'
     """
     p = "test_maze.txt" 
     msglog = dg.MessageLog()
@@ -153,7 +161,7 @@ def test_move2():
 def test_moveAndBattle(capsys):
     """
     Does the game know how to handle other tiles correctly?
-
+    __author__ = 'Nicholas Koy' and 'Nelson Contreras'
     """
     outerr = capsys.readouterr()
     out = outerr.out
@@ -187,6 +195,7 @@ def test_breakWall(capsys):
     """
     test some cases of break wall
         namely: normal case, border case, and breaking while on cooldown
+    __author__ = 'Nicholas Koy'
     """
     outerr = capsys.readouterr()
     p = "jumpBreak.txt" 
@@ -209,6 +218,9 @@ def test_breakWall(capsys):
         combined = "".join(msglog.log)
         assert "No wall to break" in combined
 def test_jumpWall(capsys):
+    """
+    Makes sure that jumpWall works
+    """
     outerr = capsys.readouterr()
     p = "jumpBreak.txt" 
     msglog = dg.MessageLog()
@@ -219,7 +231,14 @@ def test_jumpWall(capsys):
         testMaze.move(player,msglog)
         testMaze.move(player,msglog)
         assert str(testMaze.currentTuple) == "(1, 4)", "Didn't jump wall"
+        assert player.abilityList["jump"] == 4, "Down 1 from 5 after moving"
 def test_useItem(capsys):
+    """ 
+    Rests and uses items
+    Makes sure hp and hunger levels are correctly restored
+    and map reveal works
+    __author__ = 'Nicholas Koy'
+    """
     outerr = capsys.readouterr()
     p = "jumpBreak.txt" 
     msglog = dg.MessageLog()
@@ -247,3 +266,35 @@ def test_useItem(capsys):
             if not testMaze.tuplemaze[cell].revealed:
                 allRevealed = False
         assert allRevealed, "Every cell should be revealed now"
+def test_getscore():
+    """
+    checks if getScore works()
+    __author__ = 'Ali Iqbal'
+    """
+    #score = gscore.getScore()
+    name,hp,attack,speed,hunger = "Ali",25,80,45,12
+    player = dg.Player(name,hp,attack,speed,hunger)
+    score = 0
+    for i in player.inventory.keys():
+        if i == "Diamond":
+            assert score == score + player.inventory[i]*100
+        elif(i == "Gold"):
+            assert score == score + player.inventory[i]*80
+        elif(i == "Emerald"):
+            assert score == score + player.inventory[i]*60
+        elif(i == "Silver"):
+            assert score == score + player.inventory[i]*50
+        elif(i == "Bronze"):
+            assert score == score + player.inventory[i]*35
+        elif(i == "Copper"):
+            assert score == score + player.inventory[i]*20
+        elif(i == "Amber"):
+            assert score == score + player.inventory[i]*15
+        elif(i == "Nugget"):
+            assert score == score + player.inventory[i]*10
+        elif i == "small core":
+            assert score == score + (75 * player.inventory[i])
+        elif i == "medium core":
+            assert score == score + (125 * player.inventory[i])
+        elif i == "large core":
+            assert score == score + (200 * player.inventory[i])
