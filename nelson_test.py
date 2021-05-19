@@ -82,7 +82,7 @@ def test_enemyInit():
     assert gear == gear 
     assert inventory == inventory
 
-
+ 
 
 
 
