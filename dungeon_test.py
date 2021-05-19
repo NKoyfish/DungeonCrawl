@@ -10,7 +10,7 @@ import random
 from random import randint
 from math import factorial
 
-
+#Nelson Contreras - Worked on the Enemy class pytest
 def test_enemyInit():
     monsterType = random.choice([0,1,2,3,4])
     monsters = ["Zombie", "Kobold", "Orc", "Goblin",\
