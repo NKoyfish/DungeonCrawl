@@ -57,9 +57,6 @@ def test_enemyInit():
         playerInv.inventory["armor"]["equip"]["Gloves"], playerInv.inventory["armor"]["equip"]["Body Armor"], \
             playerInv.inventory["sword"]["equip"]
 
-    #continue working on recalcAttack and recalcDefense
-    entity = "Nelson"
-    dg.recalcAttack(entity)
 
 
 
@@ -87,7 +84,7 @@ def test_enemyInit():
     assert storeInventory == storeInventory
     assert gear == gear 
     assert inventory == inventory
-    
+
 def test_playerInit():
     name,hp,attack,speed,hunger = "Bob",1,2,3,4
     player = dg.Player(name,hp,attack,speed,hunger)
