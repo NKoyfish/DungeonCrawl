@@ -10,25 +10,27 @@ from time import sleep
 
 
 def test_getscore():
+    score = gscore.getScore()
+    player = dg.Player(name,hp,attack,speed,hunger)
     if i == "Diamond":
-        score += self.inventory[i]*100
+        score += player.inventory[i]*100
     elif(i == "Gold"):
-        score += self.inventory[i]*80
+        score += player.inventory[i]*80
     elif(i == "Emerald"):
-        score += self.inventory[i]*60
+        score += player.inventory[i]*60
     elif(i == "Silver"):
-        score += self.inventory[i]*50
+        score += player.inventory[i]*50
     elif(i == "Bronze"):
-        score += self.inventory[i]*35
+        score += player.inventory[i]*35
     elif(i == "Copper"):
-        score += self.inventory[i]*20
+        score += player.inventory[i]*20
     elif(i == "Amber"):
-        score += self.inventory[i]*15
+        score += player.inventory[i]*15
     elif(i == "Nugget"):
-        score += self.inventory[i]*10
+        score += player.inventory[i]*10
     elif i == "small core":
-        score += (75 * self.inventory[i])
+        score += (75 * player.inventory[i])
     elif i == "medium core":
-        score += (125 * self.inventory[i])
+        score += (125 * player.inventory[i])
     elif i == "large core":
-        score += (200 * self.inventory[i])
+        score += (200 * player.inventory[i])
